@@ -22,9 +22,9 @@ export const useQuizStore = create<StoreState>()(
       setHasHydrated: (hasHydrated: boolean) => set({ _hasHydrated: hasHydrated }),
       setAppState: (state: AppState) => set({ appState: state }),
       setCurrentQuestion: (index: number) => set({ currentQuestion: index }),
-      answerQuestion: (questionId: number, dimension: string) =>
+      answerQuestion: (questionId: number, score: number) =>
         set((state) => ({
-          answers: { ...state.answers, [questionId]: dimension as import('@/types').Dimension },
+          answers: { ...state.answers, [questionId]: score },
         })),
       setResult: (result: ResultData) => set({ result }),
       resetQuiz: () => set({

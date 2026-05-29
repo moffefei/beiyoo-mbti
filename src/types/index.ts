@@ -1,20 +1,21 @@
-export type Dimension = 'E' | 'I' | 'S' | 'N' | 'T' | 'F' | 'J' | 'P' | 'EI' | 'SN' | 'TF' | 'JP';
+export type Dimension = 'E' | 'I' | 'S' | 'N' | 'T' | 'F' | 'J' | 'P';
 
 export type DimensionKey = 'EI' | 'SN' | 'TF' | 'JP';
 
 export interface Option {
   text: string;
-  dimension: Dimension;
+  score: number; // -2, -1, 0, 1, 2
 }
 
 export interface Question {
   id: number;
-  text: string;
-  options: Option[];
-  dimension: DimensionKey;
+  text: string; // 陈述句
+  dimension: DimensionKey; // 所属维度
+  direction: Dimension; // 正向维度（得分方向）
+  options: Option[]; // 5个选项，score从-2到2
 }
 
-export type Answers = Record<number, Dimension>;
+export type Answers = Record<number, number>; // questionId -> score
 
 export interface DimensionScore {
   E: number;
@@ -25,10 +26,6 @@ export interface DimensionScore {
   F: number;
   J: number;
   P: number;
-  EI: number;
-  SN: number;
-  TF: number;
-  JP: number;
 }
 
 export type MBTIType =
@@ -39,15 +36,13 @@ export type MBTIType =
 
 export interface ResultData {
   type: MBTIType;
-  title: string;
-  description: string;
-  details: string;
-  careers: string[];
   scores: DimensionScore;
-  percentages: Record<DimensionKey, number>;
+  summary: string;
+  details: string;
+  careerAdvice: string;
 }
 
-export type AppState = 'loading' | 'welcome' | 'quiz' | 'result';
+export type AppState = 'welcome' | 'quiz' | 'loading' | 'result';
 
 export interface QuizState {
   appState: AppState;
@@ -56,7 +51,7 @@ export interface QuizState {
   result: ResultData | null;
   setAppState: (state: AppState) => void;
   setCurrentQuestion: (index: number) => void;
-  answerQuestion: (questionId: number, dimension: Dimension) => void;
+  answerQuestion: (questionId: number, score: number) => void;
   setResult: (result: ResultData) => void;
   resetQuiz: () => void;
 }

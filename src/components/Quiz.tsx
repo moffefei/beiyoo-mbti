@@ -4,7 +4,6 @@ import { useMemo, useCallback, useEffect } from 'react';
 import { useQuizStore } from '@/lib/store';
 import { questions } from '@/data/questions';
 import { calculateResult, getNextQuestionId, getProgress } from '@/lib/quizLogic';
-import type { Dimension } from '@/types';
 
 export default function Quiz() {
   const answers = useQuizStore((state) => state.answers);
@@ -20,20 +19,18 @@ export default function Quiz() {
     const answered = questions.filter((q) => answeredIds.includes(q.id));
     const unanswered = questions.filter((q) => !answeredIds.includes(q.id));
 
-    // 计算各维度当前得分倾向
+    // 计算各维度当前得分倾向（绝对值越小越优先）
     const dimBias: Record<string, number> = { EI: 0, SN: 0, TF: 0, JP: 0 };
-    for (const [qid, dim] of Object.entries(answers)) {
+    for (const [qid, score] of Object.entries(answers)) {
       const question = questions.find((q) => q.id === parseInt(qid, 10));
       if (!question) continue;
-      const pair = question.dimension;
-      const firstChar = pair[0] as Dimension;
-      dimBias[pair] += (dim === firstChar ? 1 : -1);
+      dimBias[question.dimension] += Math.abs(score);
     }
 
-    // 优先出倾向较弱的维度的题
+    // 优先出得分较少的维度的题
     unanswered.sort((a, b) => {
-      const biasA = Math.abs(dimBias[a.dimension]);
-      const biasB = Math.abs(dimBias[b.dimension]);
+      const biasA = dimBias[a.dimension];
+      const biasB = dimBias[b.dimension];
       return biasA - biasB;
     });
 
@@ -46,7 +43,7 @@ export default function Quiz() {
 
   // 如果当前题已答过，跳到下一道未答题
   useEffect(() => {
-    if (currentQ && answers[currentQ.id]) {
+    if (currentQ && answers[currentQ.id] !== undefined) {
       const nextId = getNextQuestionId(answers);
       if (nextId !== null) {
         const nextIndex = orderedQuestions.findIndex((q) => q.id === nextId);
@@ -58,13 +55,13 @@ export default function Quiz() {
   }, [currentQ, answers, currentQuestion, orderedQuestions, setCurrentQuestion]);
 
   const handleAnswer = useCallback(
-    (dimension: Dimension) => {
+    (score: number) => {
       if (!currentQ) return;
 
-      answerQuestion(currentQ.id, dimension);
+      answerQuestion(currentQ.id, score);
 
       // 检查是否完成
-      const newAnswers = { ...answers, [currentQ.id]: dimension };
+      const newAnswers = { ...answers, [currentQ.id]: score };
       const newProgress = getProgress(newAnswers);
 
       if (newProgress.current >= newProgress.total) {
@@ -137,22 +134,35 @@ export default function Quiz() {
           </h2>
         </div>
 
-        {/* 选项 */}
+        {/* 选项 - 5级李克特量表 */}
         <div className="space-y-3">
           {currentQ.options.map((option, index) => (
             <button
               key={index}
-              onClick={() => handleAnswer(option.dimension)}
+              onClick={() => handleAnswer(option.score)}
               className="w-full p-4 text-left bg-white/70 backdrop-blur-sm rounded-xl border-2 border-transparent hover:border-primary-300 hover:bg-white active:scale-[0.98] transition-all duration-200 shadow-sm"
             >
-              <div className="flex items-start gap-3">
-                <span className="w-7 h-7 rounded-lg bg-primary-50 text-primary-600 text-sm font-semibold flex items-center justify-center shrink-0 mt-0.5">
-                  {String.fromCharCode(65 + index)}
+              <div className="flex items-center gap-3">
+                <span className={`w-8 h-8 rounded-full text-sm font-semibold flex items-center justify-center shrink-0 ${
+                  index === 0 ? 'bg-red-50 text-red-600' :
+                  index === 1 ? 'bg-orange-50 text-orange-600' :
+                  index === 2 ? 'bg-gray-50 text-gray-500' :
+                  index === 3 ? 'bg-blue-50 text-blue-600' :
+                  'bg-green-50 text-green-600'
+                }`}>
+                  {index + 1}
                 </span>
                 <span className="text-gray-700 leading-relaxed">{option.text}</span>
               </div>
             </button>
           ))}
+        </div>
+
+        {/* 量表说明 */}
+        <div className="mt-4 flex justify-between text-xs text-gray-400 px-2">
+          <span>非常不符合</span>
+          <span>不确定</span>
+          <span>非常符合</span>
         </div>
       </div>
 
@@ -164,7 +174,7 @@ export default function Quiz() {
             className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
               currentQ.dimension === dim
                 ? 'bg-primary-500 text-white'
-                : answers && Object.entries(answers).some(([qid, ansDim]) => {
+                : answers && Object.entries(answers).some(([qid]) => {
                     const q = questions.find((qq) => qq.id === parseInt(qid));
                     return q?.dimension === dim;
                   })

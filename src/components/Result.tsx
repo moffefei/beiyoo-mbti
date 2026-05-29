@@ -34,6 +34,15 @@ export default function Result() {
     J: 'bg-emerald-500', P: 'bg-orange-500',
   };
 
+  // 计算百分比
+  const getPercentage = (d1: string, d2: string) => {
+    const s1 = result.scores[d1 as keyof typeof result.scores];
+    const s2 = result.scores[d2 as keyof typeof result.scores];
+    const total = s1 + s2;
+    if (total === 0) return 50;
+    return Math.round((s1 / total) * 100);
+  };
+
   return (
     <div className="min-h-screen px-5 py-6 max-w-lg mx-auto">
       {/* 顶部 */}
@@ -42,11 +51,8 @@ export default function Result() {
         <h1 className="text-5xl font-bold text-primary-600 mb-2 tracking-wider">
           {result.type}
         </h1>
-        <h2 className="text-xl font-semibold text-gray-800 mb-3">
-          {result.title}
-        </h2>
         <p className="text-sm text-gray-600 leading-relaxed max-w-sm mx-auto">
-          {result.description}
+          {result.summary}
         </p>
       </div>
 
@@ -57,7 +63,7 @@ export default function Result() {
           {dimensionPairs.map((pair) => {
             const d1 = pair[0];
             const d2 = pair[1];
-            const pct = result.percentages[pair];
+            const pct = getPercentage(d1, d2);
             const d1Score = result.scores[d1 as keyof typeof result.scores];
             const d2Score = result.scores[d2 as keyof typeof result.scores];
 
@@ -118,16 +124,9 @@ export default function Result() {
       {/* 职业建议 */}
       <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-5 mb-5 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-700 mb-3">趣味职业建议</h3>
-        <div className="flex flex-wrap gap-2">
-          {result.careers.map((career) => (
-            <span
-              key={career}
-              className="px-3 py-1.5 bg-primary-50 text-primary-700 text-xs font-medium rounded-lg"
-            >
-              {career}
-            </span>
-          ))}
-        </div>
+        <p className="text-sm text-gray-600 leading-relaxed">
+          {result.careerAdvice}
+        </p>
       </div>
 
       {/* 操作按钮 */}

@@ -49,7 +49,7 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
           if (navigator.share && navigator.canShare({ files: [file] })) {
             navigator.share({
               title: `我的 MBTI 类型是 ${result.type}`,
-              text: result.title,
+              text: result.summary,
               files: [file],
             });
           } else {
@@ -76,10 +76,10 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
         <div className="text-center mb-6">
           <p className="text-sm opacity-80 mb-2">Beiyoo MBTI 人格测试</p>
           <h2 className="text-5xl font-bold mb-2">{result.type}</h2>
-          <p className="text-xl opacity-90">{result.title}</p>
+          <p className="text-xl opacity-90">{result.summary}</p>
         </div>
         <div className="bg-white/20 rounded-xl p-4 mb-4">
-          <p className="text-sm leading-relaxed">{result.description}</p>
+          <p className="text-sm leading-relaxed">{result.details}</p>
         </div>
         <div className="text-center">
           <p className="text-xs opacity-70">扫码测测你的人格类型</p>
