@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuizStore } from '@/lib/store';
 import { dimensionDescriptions } from '@/data/results';
+import { saveMBTIResult, getStats } from '@/lib/supabase';
 import ShareCard from './ShareCard';
 import type { DimensionKey } from '@/types';
 
@@ -12,6 +13,17 @@ export default function Result() {
   const setAppState = useQuizStore((state) => state.setAppState);
   const [showDetails, setShowDetails] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [stats, setStats] = useState<{ total: number; typeCounts: Record<string, number> } | null>(null);
+
+  // 保存结果到 Supabase 并获取统计
+  useEffect(() => {
+    if (result) {
+      saveMBTIResult(result.type, result.scores);
+      getStats().then((data) => {
+        if (data) setStats(data);
+      });
+    }
+  }, [result]);
 
   const handleRestart = useCallback(() => {
     resetQuiz();
@@ -54,6 +66,14 @@ export default function Result() {
         <p className="text-sm text-gray-600 leading-relaxed max-w-sm mx-auto">
           {result.summary}
         </p>
+        {stats && (
+          <p className="text-xs text-gray-400 mt-2">
+            已有 {stats.total.toLocaleString()} 人完成测试
+            {stats.typeCounts[result.type] > 1 && (
+              <>，你是第 {stats.typeCounts[result.type]} 个 {result.type}</>
+            )}
+          </p>
+        )}
       </div>
 
       {/* 维度图表 */}
