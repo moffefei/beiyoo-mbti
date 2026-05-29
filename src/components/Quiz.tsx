@@ -140,10 +140,10 @@ export default function Quiz() {
             <button
               key={index}
               onClick={() => handleAnswer(option.score)}
-              className="w-full p-4 text-left bg-white/70 backdrop-blur-sm rounded-xl border-2 border-transparent hover:border-primary-300 hover:bg-white active:scale-[0.98] transition-all duration-200 shadow-sm"
+              className="group w-full p-4 text-left bg-white/70 backdrop-blur-sm rounded-xl border-2 border-transparent hover:border-primary-300 hover:bg-white active:bg-primary-50 active:border-primary-500 active:scale-[0.96] active:shadow-md transition-all duration-150 shadow-sm touch-manipulation"
             >
               <div className="flex items-center gap-3">
-                <span className={`w-8 h-8 rounded-full text-sm font-semibold flex items-center justify-center shrink-0 ${
+                <span className={`w-8 h-8 rounded-full text-sm font-semibold flex items-center justify-center shrink-0 transition-colors duration-150 group-active:bg-primary-500 group-active:text-white ${
                   index === 0 ? 'bg-red-50 text-red-600' :
                   index === 1 ? 'bg-orange-50 text-orange-600' :
                   index === 2 ? 'bg-gray-50 text-gray-500' :
@@ -152,7 +152,16 @@ export default function Quiz() {
                 }`}>
                   {index + 1}
                 </span>
-                <span className="text-gray-700 leading-relaxed">{option.text}</span>
+                <span className="text-gray-700 leading-relaxed flex-1">{option.text}</span>
+                <svg
+                  className="w-5 h-5 text-primary-500 opacity-0 group-active:opacity-100 transition-opacity duration-150 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
               </div>
             </button>
           ))}
