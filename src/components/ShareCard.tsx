@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useCallback, useEffect } from 'react';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import type { ResultData } from '@/types';
 
 interface ShareCardProps {
@@ -45,24 +45,11 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
         )
       );
 
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
         backgroundColor: '#ffffff',
-        useCORS: true,
-        allowTaint: true,
-        logging: true,
-        onclone: (clonedDoc) => {
-          const clonedCard = clonedDoc.querySelector('[data-share-card]') as HTMLElement;
-          if (clonedCard) {
-            clonedCard.style.position = 'fixed';
-            clonedCard.style.top = '0';
-            clonedCard.style.left = '0';
-            clonedCard.style.zIndex = '-9999';
-          }
-        },
       });
-
-      const dataUrl = canvas.toDataURL('image/png');
 
       // 移动端：尝试直接下载
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -129,15 +116,11 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
         )
       );
 
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
         backgroundColor: '#ffffff',
-        useCORS: true,
-        allowTaint: true,
-        logging: true,
       });
-
-      const dataUrl = canvas.toDataURL('image/png');
 
       // 尝试 Web Share API
       if (navigator.share) {
