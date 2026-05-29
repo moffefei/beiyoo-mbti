@@ -32,7 +32,7 @@ MVP 核心功能已完成，进入优化和部署阶段
 - [x] 项目初始化（Next.js 16 + React 19 + Tailwind v4 + Turbopack）
 - [x] Harness 三件套（AGENTS.md / tasks.md / README.md）
 - [x] SPEC 确认
-- [x] 60 题 MBTI 题库数据
+- [x] 60 题 MBTI 题库（5级李克特量表，陈述句形式）
 - [x] 16 种人格类型结果数据
 - [x] 类型定义（TypeScript）
 - [x] Zustand 状态管理（含 localStorage 持久化）
@@ -45,6 +45,7 @@ MVP 核心功能已完成，进入优化和部署阶段
 - [x] 页面整合（page.tsx）
 - [x] 构建成功（npm run build）
 - [x] 静态导出（dist/ 目录）
+- [x] 题库重构（5级李克特量表，确保16种类型均匀分布）
 
 ## 暂不做
 
