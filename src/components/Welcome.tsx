@@ -1,10 +1,20 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useQuizStore } from '@/lib/store';
+import { getTotalCount } from '@/lib/supabase';
 
 export default function Welcome() {
   const setAppState = useQuizStore((state) => state.setAppState);
   const resetQuiz = useQuizStore((state) => state.resetQuiz);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  useEffect(() => {
+    getTotalCount().then((count) => {
+      setTotalCount(count);
+    });
+  }, []);
 
   const handleStart = () => {
     resetQuiz();
@@ -23,9 +33,15 @@ export default function Welcome() {
       <h2 className="text-lg text-gray-600 mb-2 text-center">
         发现你的真实人格类型
       </h2>
-      <p className="text-sm text-gray-400 mb-10 text-center max-w-xs">
+      <p className="text-sm text-gray-400 mb-2 text-center max-w-xs">
         60 道精选题目 · 动态调整算法 · 专业人格分析
       </p>
+      {totalCount !== null && totalCount > 0 && (
+        <p className="text-xs text-primary-500 font-medium mb-8">
+          已有 {totalCount.toLocaleString()} 人完成测试
+        </p>
+      )}
+      {totalCount === null && <div className="h-5 mb-8" />}
 
       <div className="w-full max-w-sm space-y-4 mb-10">
         <div className="flex items-center gap-3 p-4 bg-white/60 backdrop-blur-sm rounded-xl">
@@ -75,6 +91,47 @@ export default function Welcome() {
       <p className="text-xs text-gray-400 mt-6">
         测试约需 5-8 分钟 · 答题进度自动保存
       </p>
+
+      {/* 免责声明 */}
+      <button
+        onClick={() => setShowDisclaimer(true)}
+        className="text-xs text-gray-400 hover:text-gray-600 mt-3 underline underline-offset-2 transition-colors"
+      >
+        测试声明
+      </button>
+
+      {/* 免责声明弹窗 */}
+      {showDisclaimer && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-6">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">性格测试声明</h3>
+            <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
+              <p>
+                <strong className="text-gray-800">1. 娱乐参考性质</strong><br />
+                本测试基于 MBTI 理论框架设计，仅供娱乐和自我探索参考，不构成专业心理诊断或职业指导建议。
+              </p>
+              <p>
+                <strong className="text-gray-800">2. 结果非绝对</strong><br />
+                人格是复杂且动态的，测试结果反映的是你答题时的倾向，而非固定不变的标签。请勿将结果作为评判自己或他人的唯一标准。
+              </p>
+              <p>
+                <strong className="text-gray-800">3. 数据收集</strong><br />
+                我们仅匿名记录测试结果（人格类型和维度分数），用于统计分析和改进测试体验。不收集任何可识别个人身份的信息。
+              </p>
+              <p>
+                <strong className="text-gray-800">4. 专业建议</strong><br />
+                如有人格发展、心理健康或职业规划方面的深度需求，建议咨询持证心理咨询师或职业规划师。
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDisclaimer(false)}
+              className="w-full mt-6 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 active:bg-primary-700 transition-colors"
+            >
+              我已了解
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

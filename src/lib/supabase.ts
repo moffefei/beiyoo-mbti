@@ -24,16 +24,22 @@ export async function saveMBTIResult(type: string, scores: DimensionScore) {
   return data;
 }
 
-export async function getStats() {
-  // 获取总测试人数
-  const { count: totalCount, error: countError } = await supabase
+export async function getTotalCount(): Promise<number> {
+  const { count, error } = await supabase
     .from('mbti_results')
     .select('*', { count: 'exact', head: true });
 
-  if (countError) {
-    console.error('Supabase count error:', countError);
-    return null;
+  if (error) {
+    console.error('Supabase count error:', error);
+    return 0;
   }
+
+  return count || 0;
+}
+
+export async function getStats() {
+  // 获取总测试人数
+  const totalCount = await getTotalCount();
 
   // 获取各类型分布
   const { data: typeData, error: typeError } = await supabase
@@ -53,7 +59,7 @@ export async function getStats() {
   });
 
   return {
-    total: totalCount || 0,
+    total: totalCount,
     typeCounts,
   };
 }
