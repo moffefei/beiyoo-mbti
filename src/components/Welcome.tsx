@@ -31,10 +31,10 @@ export default function Welcome() {
         Beiyoo MBTI
       </h1>
       <h2 className="text-lg text-gray-600 mb-2 text-center">
-        发现你的真实人格类型
+        发现你的人格类型
       </h2>
       <p className="text-sm text-gray-400 mb-2 text-center max-w-xs">
-        60 道精选题目 · 动态调整算法 · 专业人格分析
+        60 道精选题目 · 参考 2026 年最新 MBTI 研究 · 结果仅供参考
       </p>
       {totalCount !== null && totalCount > 0 && (
         <p className="text-xs text-primary-500 font-medium mb-8">
