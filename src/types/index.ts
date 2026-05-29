@@ -1,4 +1,4 @@
-export type Dimension = 'E' | 'I' | 'S' | 'N' | 'T' | 'F' | 'J' | 'P';
+export type Dimension = 'E' | 'I' | 'S' | 'N' | 'T' | 'F' | 'J' | 'P' | 'EI' | 'SN' | 'TF' | 'JP';
 
 export type DimensionKey = 'EI' | 'SN' | 'TF' | 'JP';
 
@@ -25,6 +25,10 @@ export interface DimensionScore {
   F: number;
   J: number;
   P: number;
+  EI: number;
+  SN: number;
+  TF: number;
+  JP: number;
 }
 
 export type MBTIType =

@@ -12,6 +12,7 @@ const dimensionPairs: Record<DimensionKey, [Dimension, Dimension]> = {
 export function calculateScores(answers: Answers): DimensionScore {
   const scores: DimensionScore = {
     E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0,
+    EI: 0, SN: 0, TF: 0, JP: 0,
   };
 
   for (const [questionIdStr, dimension] of Object.entries(answers)) {
@@ -19,12 +20,26 @@ export function calculateScores(answers: Answers): DimensionScore {
     const question = questions.find((q) => q.id === questionId);
     if (!question) continue;
 
-    const optionIndex = question.options.findIndex((o) => o.dimension === dimension);
-    if (optionIndex === -1) continue;
+    // 找到用户选择的选项
+    const selectedOption = question.options.find((o) => o.dimension === dimension);
+    if (!selectedOption) continue;
 
-    // 权重：选项1=3分，选项2=2分，选项3=1分
-    const weight = 3 - optionIndex;
-    scores[dimension] += weight;
+    // 根据选项位置给分：
+    // 第1个选项（极端）= 3分
+    // 第2个选项（中立）= 1分给两个方向
+    // 第3个选项（极端）= 3分
+    const optionIndex = question.options.indexOf(selectedOption);
+    
+    if (optionIndex === 1) {
+      // 中立选项：给两个方向各加1分
+      const pair = dimensionPairs[question.dimension];
+      scores[pair[0]] += 1;
+      scores[pair[1]] += 1;
+      scores[question.dimension] += 1;
+    } else {
+      // 极端选项：给选择的方向加3分
+      scores[dimension] += 3;
+    }
   }
 
   return scores;
