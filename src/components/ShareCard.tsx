@@ -187,7 +187,7 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
             ref={cardRef}
             data-share-card
             className="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 p-8 rounded-2xl text-white"
-            style={{ width: '100%', maxWidth: '375px', margin: '0 auto' }}
+            style={{ width: '375px', margin: '0 auto' }}
           >
             <div className="text-center mb-6">
               <p className="text-sm opacity-80 mb-2">Beiyoo MBTI 人格测试</p>
