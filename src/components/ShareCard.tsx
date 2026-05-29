@@ -51,39 +51,34 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
         backgroundColor: '#ffffff',
       });
 
-      // 移动端：尝试直接下载
+      // 移动端统一走系统分享（iOS Safari/微信不支持自动下载到相册）
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        // 新窗口打开图片，用户长按保存
-        const newWindow = window.open();
-        if (newWindow) {
-          newWindow.document.write(`
-            <html>
-              <head><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-              <body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#000;">
-                <img src="${dataUrl}" style="max-width:100%;display:block;" />
-              </body>
-            </html>
-          `);
-          newWindow.document.close();
-        } else {
-          // 被弹窗拦截，用 a 标签
-          const link = document.createElement('a');
-          link.href = dataUrl;
-          link.download = `beiyoo-mbti-${result.type}.png`;
-          document.body.appendChild(link);
-          link.click();
-          setTimeout(() => document.body.removeChild(link), 100);
+      if (isMobile && navigator.share) {
+        try {
+          const response = await fetch(dataUrl);
+          const blob = await response.blob();
+          const file = new File([blob], `beiyoo-mbti-${result.type}.png`, { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: `我的 MBTI 类型是 ${result.type}`,
+              text: `${result.summary} - 来测测你的人格类型吧！`,
+              files: [file],
+            });
+            setIsGenerating(false);
+            return;
+          }
+        } catch {
+          // 用户取消分享或分享失败，继续降级
         }
-      } else {
-        // 桌面端：直接下载
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = `beiyoo-mbti-${result.type}.png`;
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => document.body.removeChild(link), 100);
       }
+
+      // 桌面端：直接下载
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `beiyoo-mbti-${result.type}.png`;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => document.body.removeChild(link), 100);
     } catch (error: any) {
       console.error('生成分享卡片失败:', error);
       alert('生成图片失败: ' + (error?.message || '未知错误') + '，请尝试截图分享');
