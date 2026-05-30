@@ -13,10 +13,17 @@
   --color-primary-900: #0c4a6e;
 }
 
+html {
+  width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   color: #1a1a2e;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 @layer utilities {

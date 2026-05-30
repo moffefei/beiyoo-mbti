@@ -9,23 +9,47 @@ export function isWeChatMiniProgram(): boolean {
 
 let sdkLoadPromise: Promise<void> | null = null;
 
+function waitForMiniProgram(timeout = 3000): Promise<void> {
+  if ((window as any).wx?.miniProgram) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const timer = setInterval(() => {
+      if ((window as any).wx?.miniProgram) {
+        clearInterval(timer);
+        resolve();
+      } else if (Date.now() - start > timeout) {
+        clearInterval(timer);
+        reject(new Error('wx.miniProgram not available after waiting'));
+      }
+    }, 100);
+  });
+}
+
+async function _doLoadSDK(): Promise<void> {
+  if ((window as any).wx) {
+    await waitForMiniProgram();
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = WX_SDK_URL;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load WeChat SDK'));
+    document.head.appendChild(script);
+  });
+
+  await waitForMiniProgram();
+}
+
 export function loadWeChatSDK(): Promise<void> {
   if (typeof window === 'undefined') return Promise.reject(new Error('Not in browser'));
-  if ((window as any).wx) return Promise.resolve();
+  if ((window as any).wx?.miniProgram) return Promise.resolve();
 
   if (!sdkLoadPromise) {
-    sdkLoadPromise = new Promise<void>((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = WX_SDK_URL;
-      script.onload = () => {
-        if ((window as any).wx) {
-          resolve();
-        } else {
-          reject(new Error('WeChat SDK loaded but wx not found'));
-        }
-      };
-      script.onerror = () => reject(new Error('Failed to load WeChat SDK'));
-      document.head.appendChild(script);
+    sdkLoadPromise = _doLoadSDK().catch((err) => {
+      sdkLoadPromise = null;
+      throw err;
     });
   }
   return sdkLoadPromise;
@@ -33,13 +57,20 @@ export function loadWeChatSDK(): Promise<void> {
 
 export async function navigateToSaveImage(imageUrl: string): Promise<void> {
   await loadWeChatSDK();
-
-  const wxObj = (window as any).wx;
-  if (!wxObj?.miniProgram) {
-    throw new Error('wx.miniProgram not available');
-  }
-
-  wxObj.miniProgram.navigateTo({
+  (window as any).wx.miniProgram.navigateTo({
     url: `/pages/save-image/save-image?url=${encodeURIComponent(imageUrl)}`,
+  });
+}
+
+export async function navigateToShareResult(
+  type: string,
+  title: string,
+  desc: string,
+  imageUrl: string,
+): Promise<void> {
+  await loadWeChatSDK();
+  const params = new URLSearchParams({ type, title, desc, imageUrl });
+  (window as any).wx.miniProgram.navigateTo({
+    url: `/pages/share-result/share-result?${params.toString()}`,
   });
 }

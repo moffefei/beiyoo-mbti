@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import type { ResultData } from '@/types';
-import { isWeChatMiniProgram, navigateToSaveImage } from '@/lib/wechat';
+import { isWeChatMiniProgram, navigateToSaveImage, navigateToShareResult } from '@/lib/wechat';
 import { uploadShareCard } from '@/lib/supabase';
 
 interface ShareCardProps {
@@ -16,61 +16,64 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [qrUrl, setQrUrl] = useState<string>('');
 
-  // 生成二维码
   useEffect(() => {
     const url = encodeURIComponent('https://mbtifun.beiyoo.cn');
     setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${url}`);
   }, []);
 
+  // Generate poster image data URL (shared helper)
+  const generatePosterDataUrl = useCallback(async (): Promise<string> => {
+    if (!cardRef.current) throw new Error('卡片元素未找到');
+    await document.fonts.ready;
+    const images = cardRef.current.querySelectorAll('img');
+    await Promise.all(
+      Array.from(images).map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete) resolve();
+            else {
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+              setTimeout(() => resolve(), 2000);
+            }
+          }),
+      ),
+    );
+    const rect = cardRef.current.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    return toPng(cardRef.current, {
+      cacheBust: true,
+      pixelRatio: dpr,
+      backgroundColor: '#ffffff',
+      width: rect.width,
+      height: rect.height,
+    });
+  }, []);
+
+  // Generate poster and upload to Supabase, return public URL
+  const getOrCreatePosterImageUrl = useCallback(async (): Promise<string> => {
+    const dataUrl = await generatePosterDataUrl();
+    return uploadShareCard(dataUrl, result.type);
+  }, [generatePosterDataUrl, result.type]);
+
+  // "保存图片" button
   const generateImage = useCallback(async () => {
-    if (!cardRef.current) {
-      alert('卡片元素未找到');
-      return;
-    }
     setIsGenerating(true);
     try {
-      // 等待字体和二维码图片加载完成
-      await document.fonts.ready;
-      const images = cardRef.current.querySelectorAll('img');
-      await Promise.all(
-        Array.from(images).map(
-          (img) =>
-            new Promise<void>((resolve) => {
-              if (img.complete) {
-                resolve();
-              } else {
-                img.onload = () => resolve();
-                img.onerror = () => resolve();
-                setTimeout(() => resolve(), 2000);
-              }
-            })
-        )
-      );
-
-      const rect = cardRef.current.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      const dataUrl = await toPng(cardRef.current, {
-        cacheBust: true,
-        pixelRatio: dpr,
-        backgroundColor: '#ffffff',
-        width: rect.width,
-        height: rect.height,
-      });
-
-      // 微信小程序环境：上传到 Supabase 并跳转到小程序保存页
+      // WeChat mini program: upload to Supabase → navigate to save page
       if (isWeChatMiniProgram()) {
         try {
-          const publicUrl = await uploadShareCard(dataUrl, result.type);
+          const publicUrl = await getOrCreatePosterImageUrl();
           await navigateToSaveImage(publicUrl);
-          setIsGenerating(false);
           return;
         } catch (wxError) {
           console.warn('WeChat save failed, falling back:', wxError);
-          // 降级到原有逻辑
         }
       }
 
-      // 移动端统一走系统分享（iOS Safari/微信不支持自动下载到相册）
+      const dataUrl = await generatePosterDataUrl();
+
+      // Mobile: system share
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile && navigator.share) {
         try {
@@ -83,15 +86,14 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
               text: `${result.summary} - 来测测你的人格类型吧！`,
               files: [file],
             });
-            setIsGenerating(false);
             return;
           }
         } catch {
-          // 用户取消分享或分享失败，继续降级
+          // user cancelled or share failed
         }
       }
 
-      // 桌面端：直接下载
+      // Desktop: download
       const link = document.createElement('a');
       link.href = dataUrl;
       link.download = `beiyoo-mbti-${result.type}.png`;
@@ -104,56 +106,39 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
     } finally {
       setIsGenerating(false);
     }
-  }, [result.type]);
+  }, [result.type, result.summary, generatePosterDataUrl, getOrCreatePosterImageUrl]);
 
+  // "分享" button
   const shareToWeChat = useCallback(async () => {
-    if (!cardRef.current) {
-      alert('卡片元素未找到');
-      return;
-    }
     setIsGenerating(true);
     try {
-      await document.fonts.ready;
-      const images = cardRef.current.querySelectorAll('img');
-      await Promise.all(
-        Array.from(images).map(
-          (img) =>
-            new Promise<void>((resolve) => {
-              if (img.complete) {
-                resolve();
-              } else {
-                img.onload = () => resolve();
-                img.onerror = () => resolve();
-                setTimeout(() => resolve(), 2000);
-              }
-            })
-        )
-      );
+      // WeChat mini program: upload image → navigate to share-result page
+      if (isWeChatMiniProgram()) {
+        try {
+          const publicUrl = await getOrCreatePosterImageUrl();
+          const title = `我是 ${result.type}，快来测测你的人格类型`;
+          await navigateToShareResult(result.type, title, result.summary, publicUrl);
+          return;
+        } catch (wxError) {
+          console.warn('WeChat share failed, falling back:', wxError);
+        }
+      }
 
-      const rect = cardRef.current.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      const dataUrl = await toPng(cardRef.current, {
-        cacheBust: true,
-        pixelRatio: dpr,
-        backgroundColor: '#ffffff',
-        width: rect.width,
-        height: rect.height,
-      });
+      // Non-WeChat: original logic
+      const dataUrl = await generatePosterDataUrl();
 
-      // 尝试 Web Share API
+      // Try Web Share API
       if (navigator.share) {
         try {
           const response = await fetch(dataUrl);
           const blob = await response.blob();
           const file = new File([blob], `beiyoo-mbti-${result.type}.png`, { type: 'image/png' });
-
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({
               title: `我的 MBTI 类型是 ${result.type}`,
               text: `${result.summary} - 来测测你的人格类型吧！`,
               files: [file],
             });
-            setIsGenerating(false);
             return;
           }
         } catch (shareError: any) {
@@ -161,7 +146,7 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
         }
       }
 
-      // 降级：复制图片到剪贴板
+      // Fallback: clipboard
       try {
         const response = await fetch(dataUrl);
         const blob = await response.blob();
@@ -171,7 +156,6 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
         alert('图片已复制到剪贴板，请粘贴到聊天窗口分享');
       } catch (clipboardError: any) {
         console.error('Clipboard failed:', clipboardError?.message || clipboardError);
-        // 最终降级：在新标签页打开图片
         const newWindow = window.open();
         if (newWindow) {
           newWindow.document.write(`
@@ -194,7 +178,7 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
     } finally {
       setIsGenerating(false);
     }
-  }, [result.type, result.summary]);
+  }, [result.type, result.summary, generatePosterDataUrl, getOrCreatePosterImageUrl]);
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-6 overflow-y-auto overflow-x-hidden">
