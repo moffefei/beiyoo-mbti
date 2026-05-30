@@ -37,6 +37,27 @@ export async function getTotalCount(): Promise<number> {
   return count || 0;
 }
 
+export async function uploadShareCard(dataUrl: string, type: string): Promise<string> {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 8);
+  const filePath = `share-cards/${type}-${timestamp}-${random}.png`;
+
+  const { error } = await supabase.storage.from('share-cards').upload(filePath, blob, {
+    contentType: 'image/png',
+    upsert: false,
+  });
+
+  if (error) {
+    throw new Error(`Upload failed: ${error.message}`);
+  }
+
+  const { data: urlData } = supabase.storage.from('share-cards').getPublicUrl(filePath);
+  return urlData.publicUrl;
+}
+
 export async function getStats() {
   // 获取总测试人数
   const totalCount = await getTotalCount();

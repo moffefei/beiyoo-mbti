@@ -3,6 +3,8 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import type { ResultData } from '@/types';
+import { isWeChatMiniProgram, navigateToSaveImage } from '@/lib/wechat';
+import { uploadShareCard } from '@/lib/supabase';
 
 interface ShareCardProps {
   result: ResultData;
@@ -54,6 +56,19 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
         width: rect.width,
         height: rect.height,
       });
+
+      // 微信小程序环境：上传到 Supabase 并跳转到小程序保存页
+      if (isWeChatMiniProgram()) {
+        try {
+          const publicUrl = await uploadShareCard(dataUrl, result.type);
+          await navigateToSaveImage(publicUrl);
+          setIsGenerating(false);
+          return;
+        } catch (wxError) {
+          console.warn('WeChat save failed, falling back:', wxError);
+          // 降级到原有逻辑
+        }
+      }
 
       // 移动端统一走系统分享（iOS Safari/微信不支持自动下载到相册）
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
