@@ -45,10 +45,14 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
         )
       );
 
+      const rect = cardRef.current.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
       const dataUrl = await toPng(cardRef.current, {
         cacheBust: true,
-        pixelRatio: 2,
+        pixelRatio: dpr,
         backgroundColor: '#ffffff',
+        width: rect.width,
+        height: rect.height,
       });
 
       // 移动端统一走系统分享（iOS Safari/微信不支持自动下载到相册）
@@ -111,10 +115,14 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
         )
       );
 
+      const rect = cardRef.current.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
       const dataUrl = await toPng(cardRef.current, {
         cacheBust: true,
-        pixelRatio: 2,
+        pixelRatio: dpr,
         backgroundColor: '#ffffff',
+        width: rect.width,
+        height: rect.height,
       });
 
       // 尝试 Web Share API
@@ -174,15 +182,14 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
   }, [result.type, result.summary]);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-6 overflow-y-auto">
-      <div className="w-full max-w-md">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-6 overflow-y-auto overflow-x-hidden">
+      <div className="w-full max-w-[420px]">
         {/* 预览区域 */}
         <div className="bg-white rounded-2xl p-4 mb-4">
           <div
             ref={cardRef}
             data-share-card
-            className="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 p-8 rounded-2xl text-white"
-            style={{ width: '375px', margin: '0 auto' }}
+            className="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 p-6 sm:p-8 rounded-2xl text-white w-full max-w-[420px] mx-auto box-border"
           >
             <div className="text-center mb-6">
               <p className="text-sm opacity-80 mb-2">Beiyoo MBTI 人格测试</p>
@@ -211,7 +218,7 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
         </div>
 
         {/* 操作按钮 */}
-        <div className="flex gap-3 justify-center">
+        <div className="flex gap-3 justify-center w-full max-w-[420px] mx-auto">
           <button
             onClick={generateImage}
             disabled={isGenerating}
@@ -237,7 +244,7 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
         {onClose && (
           <button
             onClick={onClose}
-            className="w-full mt-3 py-3 bg-white/10 text-white rounded-xl font-medium hover:bg-white/20 transition-colors"
+            className="w-full max-w-[420px] mx-auto mt-3 py-3 bg-white/10 text-white rounded-xl font-medium hover:bg-white/20 transition-colors block"
           >
             关闭
           </button>
