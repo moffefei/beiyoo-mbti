@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { toPng } from 'html-to-image';
 import type { ResultData } from '@/types';
 import { isWeChatMiniProgram, navigateToSaveImage, navigateToShareResult } from '@/lib/wechat';
@@ -14,12 +14,6 @@ interface ShareCardProps {
 export default function ShareCard({ result, onClose }: ShareCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [qrUrl, setQrUrl] = useState<string>('');
-
-  useEffect(() => {
-    const url = encodeURIComponent('https://mbtifun.beiyoo.cn');
-    setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${url}`);
-  }, []);
 
   // Generate poster image data URL (shared helper)
   const generatePosterDataUrl = useCallback(async (): Promise<string> => {
@@ -190,28 +184,17 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
             data-share-card
             className="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 p-6 sm:p-8 rounded-2xl text-white w-full max-w-[420px] mx-auto box-border"
           >
-            <div className="text-center mb-6">
-              <p className="text-sm opacity-80 mb-2">Beiyoo MBTI 人格测试</p>
-              <h2 className="text-5xl font-bold mb-2">{result.type}</h2>
-              <p className="text-xl opacity-90">{result.summary}</p>
+            <div className="text-center mb-8">
+              <p className="text-base opacity-80 mb-3 tracking-wide">Beiyoo MBTI 人格测试</p>
+              <h2 className="text-6xl font-bold mb-3">{result.type}</h2>
+              <p className="text-2xl opacity-90">{result.summary}</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-4 mb-4">
-              <p className="text-sm leading-relaxed">{result.details}</p>
+            <div className="bg-white/20 rounded-xl p-5 mb-6">
+              <p className="text-base leading-relaxed">{result.details}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs opacity-70">扫码测测你的人格类型</p>
-              <div className="mt-2 w-20 h-20 bg-white rounded-lg mx-auto flex items-center justify-center overflow-hidden">
-                {qrUrl ? (
-                  <img
-                    src={qrUrl}
-                    alt="二维码"
-                    className="w-full h-full object-contain"
-                    crossOrigin="anonymous"
-                  />
-                ) : (
-                  <span className="text-2xl">📱</span>
-                )}
-              </div>
+              <p className="text-sm opacity-70 tracking-widest">BEIYOO · AI</p>
+              <p className="text-xs opacity-50 mt-1">测测你的人格类型</p>
             </div>
           </div>
         </div>
