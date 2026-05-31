@@ -75,11 +75,16 @@ export async function uploadShareCard(dataUrl: string, type: string): Promise<st
     console.log('[MBTI_SHARE_DEBUG] Supabase upload 成功');
 
     const { data: urlData } = supabase.storage.from('share-cards').getPublicUrl(filePath);
-    console.log('[MBTI_SHARE_DEBUG] publicUrl:', urlData.publicUrl);
-    console.log('[MBTI_SHARE_DEBUG] publicUrl 是 HTTPS:', urlData.publicUrl.startsWith('https://'));
+    const originalUrl = urlData.publicUrl;
+    console.log('[MBTI_SHARE_DEBUG] original publicUrl:', originalUrl);
+
+    // 转换为 Cloudflare Worker 代理 URL，确保小程序可以下载
+    const proxyUrl = `https://img-proxy.moffefei.workers.dev/?url=${encodeURIComponent(originalUrl)}`;
+    console.log('[MBTI_SHARE_DEBUG] proxyUrl:', proxyUrl);
+    console.log('[MBTI_SHARE_DEBUG] proxyUrl 是 HTTPS:', proxyUrl.startsWith('https://'));
 
     console.log('[MBTI_SHARE_DEBUG] ===== 图片上传完成 =====');
-    return urlData.publicUrl;
+    return proxyUrl;
   } catch (error: any) {
     console.error('[MBTI_SHARE_DEBUG] uploadShareCard 失败:', error);
     console.error('[MBTI_SHARE_DEBUG] error message:', error?.message);
