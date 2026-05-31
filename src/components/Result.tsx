@@ -53,35 +53,6 @@ export default function Result() {
     console.log('[MBTI_SHARE_DEBUG] isWeChatMiniProgram():', isWeChatMiniProgram());
     console.log('[MBTI_SHARE_DEBUG] resultData:', { type: result.type, summary: result.summary });
 
-    // ===== DEBUG 测试分支：直接测试小程序跳转链路 =====
-    console.log('[MBTI_SHARE_DEBUG] mini program direct navigate test start');
-    console.log('[MBTI_SHARE_DEBUG] window.wx', (window as any).wx);
-    console.log('[MBTI_SHARE_DEBUG] wx.miniProgram', (window as any).wx && (window as any).wx.miniProgram);
-
-    if ((window as any).wx?.miniProgram) {
-      const testImageUrl = 'https://mbtifun.beiyoo.cn/test-poster.png';
-      const testUrl =
-        '/pages/share-result/share-result'
-        + '?type=ESFP'
-        + '&title=' + encodeURIComponent('我是 ESFP，快来测测你的人格类型')
-        + '&desc=' + encodeURIComponent('你热情开朗，热爱社交')
-        + '&imageUrl=' + encodeURIComponent(testImageUrl);
-
-      console.log('[MBTI_SHARE_DEBUG] 测试跳转 URL:', testUrl);
-      console.log('[MBTI_SHARE_DEBUG] 测试跳转 URL 长度:', testUrl.length);
-
-      (window as any).wx.miniProgram.navigateTo({
-        url: testUrl,
-        success: (res: any) => console.log('[MBTI_SHARE_DEBUG] navigateTo success', res),
-        fail: (err: any) => console.error('[MBTI_SHARE_DEBUG] navigateTo fail', err),
-        complete: (res: any) => console.log('[MBTI_SHARE_DEBUG] navigateTo complete', res),
-      });
-
-      setIsGeneratingPoster(false);
-      return; // 测试分支直接返回，不执行后续逻辑
-    }
-    // ===== DEBUG 测试分支结束 =====
-
     try {
       // 1. 生成分享图并上传
       console.log('[MBTI_SHARE_DEBUG] 开始调用 generateAndUploadShareImage...');
