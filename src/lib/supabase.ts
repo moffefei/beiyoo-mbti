@@ -90,8 +90,8 @@ export async function uploadShareCard(dataUrl: string, type: string): Promise<st
     const supabaseImageUrl = urlData.publicUrl;
     console.log('[MBTI_SHARE_DEBUG] supabaseImageUrl:', supabaseImageUrl);
 
-    // 生成代理 URL（通过 H5 域名代理，确保小程序域名白名单可用）
-    const proxyImageUrl = `https://mbtifun.beiyoo.cn/api/image-proxy?path=${encodeURIComponent(fileName)}`;
+    // 使用 file.beiyoo.cn 代理域名，确保小程序域名白名单可用
+    const proxyImageUrl = `https://file.beiyoo.cn/share-cards/${encodeURIComponent(fileName)}`;
     console.log('[MBTI_SHARE_DEBUG] proxyImageUrl:', proxyImageUrl);
 
     // 最终传给小程序的 imageUrl（使用代理 URL）
