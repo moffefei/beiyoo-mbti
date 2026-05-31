@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { DimensionScore } from '@/types';
 
 const supabaseUrl = 'https://oezqnopahohliveopdrg.supabase.co';
-const supabaseAnonKey = 'eyJhbG...edqs';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lenFub3BhaG9obGl2ZW9wZHJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTg4MTAsImV4cCI6MjA5NTYzNDgxMH0.ZttO8WPNzSUjkELGphEiP45q29ThAXBbLZ0jABbedqs';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
