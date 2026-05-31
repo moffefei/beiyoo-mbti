@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import DebugPanel from "@/components/DebugPanel";
 
 export const metadata: Metadata = {
   title: "Beiyoo MBTI 人格测试",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        {children}
+        <DebugPanel />
+      </body>
     </html>
   );
 }
