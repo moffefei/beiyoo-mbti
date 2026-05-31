@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { DimensionScore } from '@/types';
 
 const supabaseUrl = 'https://oezqnopahohliveopdrg.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lenFub3BhaG9obGl2ZW9wZHJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTg4MTAsImV4cCI6MjA5NTYzNDgxMH0.ZttO8WPNzSUjkELGphEiP45q29ThAXBbLZ0jABbedqs';
+const supabaseAnonKey = 'eyJhbG...edqs';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -38,24 +38,53 @@ export async function getTotalCount(): Promise<number> {
 }
 
 export async function uploadShareCard(dataUrl: string, type: string): Promise<string> {
-  const res = await fetch(dataUrl);
-  const blob = await res.blob();
+  console.log('[MBTI_SHARE_DEBUG] ===== 开始上传图片 =====');
+  console.log('[MBTI_SHARE_DEBUG] uploadShareCard 被调用');
+  console.log('[MBTI_SHARE_DEBUG] dataUrl 长度:', dataUrl.length);
 
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).slice(2, 8);
-  const filePath = `share-cards/${type}-${timestamp}-${random}.png`;
+  try {
+    const res = await fetch(dataUrl);
+    console.log('[MBTI_SHARE_DEBUG] fetch dataUrl 状态:', res.status, res.statusText);
 
-  const { error } = await supabase.storage.from('share-cards').upload(filePath, blob, {
-    contentType: 'image/png',
-    upsert: false,
-  });
+    const blob = await res.blob();
+    console.log('[MBTI_SHARE_DEBUG] blob size:', blob.size);
+    console.log('[MBTI_SHARE_DEBUG] blob type:', blob.type);
 
-  if (error) {
-    throw new Error(`Upload failed: ${error.message}`);
+    if (blob.size === 0) {
+      console.error('[MBTI_SHARE_DEBUG] blob 为空');
+      throw new Error('图片数据为空');
+    }
+
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).slice(2, 8);
+    const filePath = `share-cards/${type}-${timestamp}-${random}.png`;
+    console.log('[MBTI_SHARE_DEBUG] 上传文件路径:', filePath);
+
+    const { error } = await supabase.storage.from('share-cards').upload(filePath, blob, {
+      contentType: 'image/png',
+      upsert: false,
+    });
+
+    if (error) {
+      console.error('[MBTI_SHARE_DEBUG] Supabase upload error:', error);
+      console.error('[MBTI_SHARE_DEBUG] error message:', error.message);
+      console.error('[MBTI_SHARE_DEBUG] error status:', (error as any).status);
+      throw new Error(`Upload failed: ${error.message}`);
+    }
+
+    console.log('[MBTI_SHARE_DEBUG] Supabase upload 成功');
+
+    const { data: urlData } = supabase.storage.from('share-cards').getPublicUrl(filePath);
+    console.log('[MBTI_SHARE_DEBUG] publicUrl:', urlData.publicUrl);
+    console.log('[MBTI_SHARE_DEBUG] publicUrl 是 HTTPS:', urlData.publicUrl.startsWith('https://'));
+
+    console.log('[MBTI_SHARE_DEBUG] ===== 图片上传完成 =====');
+    return urlData.publicUrl;
+  } catch (error: any) {
+    console.error('[MBTI_SHARE_DEBUG] uploadShareCard 失败:', error);
+    console.error('[MBTI_SHARE_DEBUG] error message:', error?.message);
+    throw error;
   }
-
-  const { data: urlData } = supabase.storage.from('share-cards').getPublicUrl(filePath);
-  return urlData.publicUrl;
 }
 
 export async function getStats() {

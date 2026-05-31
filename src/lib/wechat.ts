@@ -75,24 +75,25 @@ export async function navigateToShareResult(
   desc: string,
   imageUrl: string,
 ): Promise<void> {
+  console.log('[MBTI_SHARE_DEBUG] ===== 开始跳转小程序原生页 =====');
+
   await loadWeChatSDK();
+  console.log('[MBTI_SHARE_DEBUG] WeChat SDK 加载完成');
 
   // 如果 imageUrl 太长，使用 posterId 短参数
-  // Supabase URL 通常较长，这里设置一个合理的阈值
   const MAX_URL_LENGTH = 800;
   let finalImageUrl = imageUrl;
   let posterId: string | undefined;
 
-  // 提取文件名作为 posterId（Supabase URL 的最后一段）
   if (imageUrl.length > MAX_URL_LENGTH) {
     try {
       const url = new URL(imageUrl);
       const pathParts = url.pathname.split('/');
       posterId = pathParts[pathParts.length - 1];
-      // 保留基础 URL，小程序端可以通过 posterId 拼接完整 URL
       finalImageUrl = `${url.origin}${pathParts.slice(0, -1).join('/')}/`;
+      console.log('[MBTI_SHARE_DEBUG] URL 过长，使用 posterId:', posterId);
     } catch {
-      // URL 解析失败，保留原样
+      console.log('[MBTI_SHARE_DEBUG] URL 解析失败，保留原样');
     }
   }
 
@@ -107,16 +108,25 @@ export async function navigateToShareResult(
   }
 
   const url = `/pages/share-result/share-result?${params.toString()}`;
-  console.log('[WeChat] Navigating to:', url);
+  console.log('[MBTI_SHARE_DEBUG] 最终跳转 URL:', url);
+  console.log('[MBTI_SHARE_DEBUG] URL 长度:', url.length);
+  console.log('[MBTI_SHARE_DEBUG] imageUrl:', finalImageUrl);
+  console.log('[MBTI_SHARE_DEBUG] posterId:', posterId);
 
   (window as any).wx.miniProgram.navigateTo({
     url: url,
-    success: () => {
-      console.log('[WeChat] navigateTo success');
+    success: (res: any) => {
+      console.log('[MBTI_SHARE_DEBUG] navigateTo success', res);
     },
     fail: (err: any) => {
-      console.error('[WeChat] navigateTo failed:', err);
-      throw new Error(`跳转失败: ${err?.errMsg || '未知错误'}`);
+      console.error('[MBTI_SHARE_DEBUG] navigateTo fail', err);
+      console.error('[MBTI_SHARE_DEBUG] navigateTo fail errMsg:', err?.errMsg);
+      console.error('[MBTI_SHARE_DEBUG] navigateTo fail errCode:', err?.errCode);
+    },
+    complete: (res: any) => {
+      console.log('[MBTI_SHARE_DEBUG] navigateTo complete', res);
     },
   });
+
+  console.log('[MBTI_SHARE_DEBUG] ===== navigateTo 调用已发出 =====');
 }

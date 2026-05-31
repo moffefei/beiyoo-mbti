@@ -43,18 +43,47 @@ export default function Result() {
   const handleGenerateSharePoster = useCallback(async () => {
     if (!result) return;
     setIsGeneratingPoster(true);
+
+    // ===== 调试日志：点击按钮时的环境信息 =====
+    console.log('[MBTI_SHARE_DEBUG] ===== 分享按钮点击 =====');
+    console.log('[MBTI_SHARE_DEBUG] navigator.userAgent:', navigator.userAgent);
+    console.log('[MBTI_SHARE_DEBUG] window.__wxjs_environment:', (window as any).__wxjs_environment);
+    console.log('[MBTI_SHARE_DEBUG] window.wx exists:', typeof (window as any).wx !== 'undefined');
+    console.log('[MBTI_SHARE_DEBUG] wx.miniProgram exists:', typeof (window as any).wx?.miniProgram !== 'undefined');
+    console.log('[MBTI_SHARE_DEBUG] isWeChatMiniProgram():', isWeChatMiniProgram());
+    console.log('[MBTI_SHARE_DEBUG] resultData:', { type: result.type, summary: result.summary });
+
     try {
       // 1. 生成分享图并上传
+      console.log('[MBTI_SHARE_DEBUG] 开始调用 generateAndUploadShareImage...');
       const publicUrl = await generateAndUploadShareImage(result);
+      console.log('[MBTI_SHARE_DEBUG] generateAndUploadShareImage 返回:', publicUrl);
+
+      // 校验 imageUrl
+      if (!publicUrl) {
+        console.error('[MBTI_SHARE_DEBUG] imageUrl 为空');
+        alert('分享海报生成失败，图片 URL 为空');
+        return;
+      }
+      if (!publicUrl.startsWith('https://')) {
+        console.error('[MBTI_SHARE_DEBUG] imageUrl 不是 HTTPS:', publicUrl);
+        alert('分享海报生成失败，图片 URL 格式错误');
+        return;
+      }
 
       // 2. 跳转到小程序原生分享页
       const title = `我是 ${result.type}，快来测测你的人格类型`;
+      console.log('[MBTI_SHARE_DEBUG] 准备跳转到小程序原生页...');
       await navigateToShareResult(result.type, title, result.summary, publicUrl);
+      console.log('[MBTI_SHARE_DEBUG] navigateToShareResult 调用完成');
     } catch (error: any) {
-      console.error('分享海报生成失败:', error);
+      console.error('[MBTI_SHARE_DEBUG] share poster failed', error);
+      console.error('[MBTI_SHARE_DEBUG] error message:', error?.message);
+      console.error('[MBTI_SHARE_DEBUG] error stack:', error?.stack);
       alert('分享海报生成失败，请稍后重试');
     } finally {
       setIsGeneratingPoster(false);
+      console.log('[MBTI_SHARE_DEBUG] ===== 分享流程结束 =====');
     }
   }, [result]);
 
