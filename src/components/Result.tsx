@@ -5,6 +5,8 @@ import { useQuizStore } from '@/lib/store';
 import { dimensionDescriptions } from '@/data/results';
 import { saveMBTIResult, getStats } from '@/lib/supabase';
 import ShareCard from './ShareCard';
+import { isWeChatMiniProgram, navigateToShareResult } from '@/lib/wechat';
+import { generateAndUploadShareImage } from '@/lib/shareImage';
 import type { DimensionKey } from '@/types';
 
 export default function Result() {
@@ -14,6 +16,13 @@ export default function Result() {
   const [showDetails, setShowDetails] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [stats, setStats] = useState<{ total: number; typeCounts: Record<string, number> } | null>(null);
+  const [isGeneratingPoster, setIsGeneratingPoster] = useState(false);
+  const [inMiniProgram, setInMiniProgram] = useState(false);
+
+  // 检测是否在小程序 web-view 环境
+  useEffect(() => {
+    setInMiniProgram(isWeChatMiniProgram());
+  }, []);
 
   // 保存结果到 Supabase 并获取统计
   useEffect(() => {
@@ -29,6 +38,30 @@ export default function Result() {
     resetQuiz();
     setAppState('welcome');
   }, [resetQuiz, setAppState]);
+
+  // 小程序环境：生成分享海报并跳转到原生分享页
+  const handleGenerateSharePoster = useCallback(async () => {
+    if (!result) return;
+    setIsGeneratingPoster(true);
+    try {
+      // 1. 生成分享图并上传
+      const publicUrl = await generateAndUploadShareImage(result);
+
+      // 2. 跳转到小程序原生分享页
+      const title = `我是 ${result.type}，快来测测你的人格类型`;
+      await navigateToShareResult(result.type, title, result.summary, publicUrl);
+    } catch (error: any) {
+      console.error('分享海报生成失败:', error);
+      alert('分享海报生成失败，请稍后重试');
+    } finally {
+      setIsGeneratingPoster(false);
+    }
+  }, [result]);
+
+  // 普通浏览器环境：打开 H5 分享弹窗
+  const handleOpenShareModal = useCallback(() => {
+    setShowShare(true);
+  }, []);
 
   if (!result) {
     return (
@@ -151,15 +184,30 @@ export default function Result() {
 
       {/* 操作按钮 */}
       <div className="space-y-3 mb-8">
-        <button
-          onClick={() => setShowShare(true)}
-          className="w-full py-3.5 bg-primary-500 text-white rounded-xl text-base font-semibold hover:bg-primary-600 active:bg-primary-700 transition-colors shadow-lg shadow-primary-200 flex items-center justify-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-          </svg>
-          生成分享卡片
-        </button>
+        {inMiniProgram ? (
+          // 小程序 web-view 环境：直接生成海报并跳转原生页
+          <button
+            onClick={handleGenerateSharePoster}
+            disabled={isGeneratingPoster}
+            className="w-full py-3.5 bg-primary-500 text-white rounded-xl text-base font-semibold hover:bg-primary-600 active:bg-primary-700 transition-colors shadow-lg shadow-primary-200 flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {isGeneratingPoster ? '正在生成分享海报...' : '生成分享海报'}
+          </button>
+        ) : (
+          // 普通浏览器环境：打开 H5 分享弹窗
+          <button
+            onClick={handleOpenShareModal}
+            className="w-full py-3.5 bg-primary-500 text-white rounded-xl text-base font-semibold hover:bg-primary-600 active:bg-primary-700 transition-colors shadow-lg shadow-primary-200 flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            生成分享卡片
+          </button>
+        )}
         <button
           onClick={handleRestart}
           className="w-full py-3.5 bg-white text-gray-700 rounded-xl text-base font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors border border-gray-200"
@@ -168,8 +216,8 @@ export default function Result() {
         </button>
       </div>
 
-      {/* 分享卡片弹窗 */}
-      {showShare && (
+      {/* 分享卡片弹窗 — 仅在普通浏览器环境显示 */}
+      {showShare && !inMiniProgram && (
         <ShareCard
           result={result}
           onClose={() => setShowShare(false)}

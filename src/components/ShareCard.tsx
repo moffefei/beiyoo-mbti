@@ -5,6 +5,7 @@ import { toPng } from 'html-to-image';
 import type { ResultData } from '@/types';
 import { isWeChatMiniProgram, navigateToSaveImage, navigateToShareResult } from '@/lib/wechat';
 import { uploadShareCard } from '@/lib/supabase';
+import { generateAndUploadShareImage } from '@/lib/shareImage';
 
 interface ShareCardProps {
   result: ResultData;
@@ -50,21 +51,10 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
     return uploadShareCard(dataUrl, result.type);
   }, [generatePosterDataUrl, result.type]);
 
-  // "保存图片" button
+  // "保存图片" button — 普通浏览器环境
   const generateImage = useCallback(async () => {
     setIsGenerating(true);
     try {
-      // WeChat mini program: upload to Supabase → navigate to save page
-      if (isWeChatMiniProgram()) {
-        try {
-          const publicUrl = await getOrCreatePosterImageUrl();
-          await navigateToSaveImage(publicUrl);
-          return;
-        } catch (wxError) {
-          console.warn('WeChat save failed, falling back:', wxError);
-        }
-      }
-
       const dataUrl = await generatePosterDataUrl();
 
       // Mobile: system share
@@ -100,25 +90,12 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
     } finally {
       setIsGenerating(false);
     }
-  }, [result.type, result.summary, generatePosterDataUrl, getOrCreatePosterImageUrl]);
+  }, [result.type, result.summary, generatePosterDataUrl]);
 
-  // "分享" button
+  // "分享" button — 普通浏览器环境
   const shareToWeChat = useCallback(async () => {
     setIsGenerating(true);
     try {
-      // WeChat mini program: upload image → navigate to share-result page
-      if (isWeChatMiniProgram()) {
-        try {
-          const publicUrl = await getOrCreatePosterImageUrl();
-          const title = `我是 ${result.type}，快来测测你的人格类型`;
-          await navigateToShareResult(result.type, title, result.summary, publicUrl);
-          return;
-        } catch (wxError) {
-          console.warn('WeChat share failed, falling back:', wxError);
-        }
-      }
-
-      // Non-WeChat: original logic
       const dataUrl = await generatePosterDataUrl();
 
       // Try Web Share API
@@ -172,7 +149,7 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
     } finally {
       setIsGenerating(false);
     }
-  }, [result.type, result.summary, generatePosterDataUrl, getOrCreatePosterImageUrl]);
+  }, [result.type, result.summary, generatePosterDataUrl]);
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-6 overflow-y-auto overflow-x-hidden">

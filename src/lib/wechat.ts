@@ -62,6 +62,13 @@ export async function navigateToSaveImage(imageUrl: string): Promise<void> {
   });
 }
 
+/**
+ * 跳转到小程序原生分享结果页
+ * @param type MBTI 类型
+ * @param title 分享标题
+ * @param desc 分享描述
+ * @param imageUrl 分享图片 URL（HTTPS）
+ */
 export async function navigateToShareResult(
   type: string,
   title: string,
@@ -69,8 +76,47 @@ export async function navigateToShareResult(
   imageUrl: string,
 ): Promise<void> {
   await loadWeChatSDK();
-  const params = new URLSearchParams({ type, title, desc, imageUrl });
+
+  // 如果 imageUrl 太长，使用 posterId 短参数
+  // Supabase URL 通常较长，这里设置一个合理的阈值
+  const MAX_URL_LENGTH = 800;
+  let finalImageUrl = imageUrl;
+  let posterId: string | undefined;
+
+  // 提取文件名作为 posterId（Supabase URL 的最后一段）
+  if (imageUrl.length > MAX_URL_LENGTH) {
+    try {
+      const url = new URL(imageUrl);
+      const pathParts = url.pathname.split('/');
+      posterId = pathParts[pathParts.length - 1];
+      // 保留基础 URL，小程序端可以通过 posterId 拼接完整 URL
+      finalImageUrl = `${url.origin}${pathParts.slice(0, -1).join('/')}/`;
+    } catch {
+      // URL 解析失败，保留原样
+    }
+  }
+
+  // 使用 URLSearchParams 确保正确编码
+  const params = new URLSearchParams();
+  params.set('type', type);
+  params.set('title', title);
+  params.set('desc', desc);
+  params.set('imageUrl', finalImageUrl);
+  if (posterId) {
+    params.set('posterId', posterId);
+  }
+
+  const url = `/pages/share-result/share-result?${params.toString()}`;
+  console.log('[WeChat] Navigating to:', url);
+
   (window as any).wx.miniProgram.navigateTo({
-    url: `/pages/share-result/share-result?${params.toString()}`,
+    url: url,
+    success: () => {
+      console.log('[WeChat] navigateTo success');
+    },
+    fail: (err: any) => {
+      console.error('[WeChat] navigateTo failed:', err);
+      throw new Error(`跳转失败: ${err?.errMsg || '未知错误'}`);
+    },
   });
 }
