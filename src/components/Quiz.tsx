@@ -40,6 +40,14 @@ export default function Quiz() {
   const currentQ = orderedQuestions[currentQuestion];
   const progress = getProgress(answers);
   const progressPercent = Math.round((progress.current / progress.total) * 100);
+  const milestoneMessage =
+    progressPercent >= 75
+      ? '快完成了，最后几题会让倾向更清晰'
+      : progressPercent >= 50
+        ? '已经完成一半，结果正在变清晰'
+        : progressPercent >= 25
+          ? '节奏不错，继续按真实感受选择'
+          : '';
 
   // 如果当前题已答过，跳到下一道未答题
   useEffect(() => {
@@ -120,6 +128,9 @@ export default function Quiz() {
               style={{ width: `${progressPercent}%` }}
             />
           </div>
+          {milestoneMessage && (
+            <p className="mt-2 text-xs text-primary-600">{milestoneMessage}</p>
+          )}
         </div>
       </div>
 
@@ -175,26 +186,7 @@ export default function Quiz() {
         </div>
       </div>
 
-      {/* 底部维度标签 */}
-      <div className="mt-8 flex justify-center gap-2">
-        {['EI', 'SN', 'TF', 'JP'].map((dim) => (
-          <span
-            key={dim}
-            className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
-              currentQ.dimension === dim
-                ? 'bg-primary-500 text-white'
-                : answers && Object.entries(answers).some(([qid]) => {
-                    const q = questions.find((qq) => qq.id === parseInt(qid));
-                    return q?.dimension === dim;
-                  })
-                ? 'bg-primary-100 text-primary-600'
-                : 'bg-gray-100 text-gray-400'
-            }`}
-          >
-            {dim}
-          </span>
-        ))}
-      </div>
+      <div className="pb-[env(safe-area-inset-bottom)]" />
     </div>
   );
 }

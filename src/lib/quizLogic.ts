@@ -1,13 +1,24 @@
 import { questions } from '@/data/questions';
 import { resultDataMap } from '@/data/results';
-import type { Answers, DimensionScore, MBTIType, ResultData } from '@/types';
+import type {
+  Answers,
+  DimensionKey,
+  DimensionResult,
+  DimensionScore,
+  DimensionStrength,
+  MBTIType,
+  ResultData,
+} from '@/types';
 
-const dimensionPairs: Record<string, [keyof DimensionScore, keyof DimensionScore]> = {
+const dimensionPairs: Record<DimensionKey, [keyof DimensionScore, keyof DimensionScore]> = {
   EI: ['E', 'I'],
   SN: ['S', 'N'],
   TF: ['T', 'F'],
   JP: ['J', 'P'],
 };
+
+const pairOrder: DimensionKey[] = ['EI', 'SN', 'TF', 'JP'];
+const lowEvidenceThreshold = 6;
 
 export function getSortedQuestions(): typeof questions {
   return [...questions].sort((a, b) => a.id - b.id);
@@ -52,13 +63,72 @@ export function calculateScores(answers: Answers): DimensionScore {
   return scores;
 }
 
+function getStrength(difference: number, evidence: number): DimensionStrength {
+  if (evidence < lowEvidenceThreshold || difference === 0) return 'uncertain';
+  const ratio = difference / evidence;
+  if (ratio >= 0.45) return 'clear';
+  if (ratio >= 0.25) return 'moderate';
+  return 'slight';
+}
+
+export function analyzeDimensions(scores: DimensionScore): DimensionResult[] {
+  return pairOrder.map((pair) => {
+    const [left, right] = dimensionPairs[pair];
+    const leftScore = scores[left];
+    const rightScore = scores[right];
+    const evidence = leftScore + rightScore;
+    const difference = Math.abs(leftScore - rightScore);
+    const preferred = leftScore === rightScore ? null : leftScore > rightScore ? left : right;
+    const percentage = evidence === 0 ? 50 : Math.round((leftScore / evidence) * 100);
+
+    return {
+      pair,
+      left,
+      right,
+      leftScore,
+      rightScore,
+      preferred,
+      percentage,
+      evidence,
+      difference,
+      strength: getStrength(difference, evidence),
+      isTie: leftScore === rightScore,
+    };
+  });
+}
+
 export function determineMBTIType(scores: DimensionScore): MBTIType {
-  let type = '';
-  type += scores.E >= scores.I ? 'E' : 'I';
-  type += scores.S >= scores.N ? 'S' : 'N';
-  type += scores.T >= scores.F ? 'T' : 'F';
-  type += scores.J >= scores.P ? 'J' : 'P';
+  const type = analyzeDimensions(scores)
+    .map((dimension) => dimension.preferred ?? dimension.left)
+    .join('');
   return type as MBTIType;
+}
+
+function getDisplayType(dimensions: DimensionResult[]): string {
+  const letters = dimensions.map((dimension) =>
+    dimension.strength === 'uncertain' || !dimension.preferred ? '?' : dimension.preferred
+  );
+
+  if (letters.every((letter) => letter === '?')) {
+    return '倾向不明显';
+  }
+
+  return letters.join('');
+}
+
+function getConfidenceNote(dimensions: DimensionResult[]): string {
+  const uncertain = dimensions.filter((dimension) => dimension.strength === 'uncertain');
+
+  if (uncertain.length === dimensions.length) {
+    return '你的回答中中立或接近中立的选择较多，暂时不足以形成稳定类型。建议把结果当作当前状态的轻量反馈，或稍后重新测试。';
+  }
+
+  if (uncertain.length > 0) {
+    const labels = uncertain.map((dimension) => dimension.pair).join('、');
+    return `你的 ${labels} 维度倾向还不明显，结果更适合作为当前选择模式的参考，而不是固定人格标签。`;
+  }
+
+  return '这个结果反映的是你当前在四个偏好维度上的回答模式，不代表固定不变的人格标签。';
 }
 
 export function getProgress(answers: Answers) {
@@ -89,14 +159,31 @@ export function getNextQuestionId(answers: Answers): number | null {
 
 export function calculateResult(answers: Answers): ResultData {
   const scores = calculateScores(answers);
+  const dimensionResults = analyzeDimensions(scores);
   const type = determineMBTIType(scores);
+  const displayType = getDisplayType(dimensionResults);
+  const uncertainDimensions = dimensionResults
+    .filter((dimension) => dimension.strength === 'uncertain')
+    .map((dimension) => dimension.pair);
+  const isLowConfidence = uncertainDimensions.length >= 3;
   const resultData = resultDataMap[type];
   
   return {
     type,
+    displayType,
     scores,
-    summary: resultData.summary,
-    details: resultData.details,
-    careerAdvice: resultData.careerAdvice,
+    summary: isLowConfidence
+      ? '你的回答目前没有形成清晰的四维倾向，这可能表示你在不同情境下有较强的弹性，或这次选择偏中立。'
+      : resultData.summary,
+    details: isLowConfidence
+      ? '当多个维度都接近中立时，给出确定人格类型会误导你。这个结果更适合提醒你：在做自我探索时，可以回想具体场景里的真实偏好，而不是追求一个固定标签。'
+      : resultData.details,
+    careerAdvice: isLowConfidence
+      ? '先观察自己在社交能量、信息处理、决策依据和生活结构上的真实偏好，再把职业建议当作轻量参考。'
+      : resultData.careerAdvice,
+    dimensionResults,
+    uncertainDimensions,
+    isLowConfidence,
+    confidenceNote: getConfidenceNote(dimensionResults),
   };
 }

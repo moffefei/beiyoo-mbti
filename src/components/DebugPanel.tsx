@@ -11,23 +11,17 @@ interface LogEntry {
 export default function DebugPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('debug') === '1' || localStorage.getItem('debug_mbti') === '1';
+  });
   const logsEndRef = useRef<HTMLDivElement>(null);
   const originalConsole = useRef<{
     log: typeof console.log;
     error: typeof console.error;
     warn: typeof console.warn;
   } | null>(null);
-
-  // 检查是否开启调试模式
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlDebug = urlParams.get('debug') === '1';
-    const localDebug = localStorage.getItem('debug_mbti') === '1';
-    if (urlDebug || localDebug) {
-      setIsVisible(true);
-    }
-  }, []);
 
   // 拦截 console 日志
   useEffect(() => {

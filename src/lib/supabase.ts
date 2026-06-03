@@ -44,20 +44,11 @@ export async function getTotalCount(): Promise<number> {
  * @returns 代理后的图片 URL (用于小程序分享)
  */
 export async function uploadShareCard(dataUrl: string, type: string): Promise<string> {
-  console.log('[MBTI_SHARE_DEBUG] ===== 开始上传图片 =====');
-  console.log('[MBTI_SHARE_DEBUG] uploadShareCard 被调用');
-  console.log('[MBTI_SHARE_DEBUG] dataUrl 长度:', dataUrl.length);
-
   try {
     const res = await fetch(dataUrl);
-    console.log('[MBTI_SHARE_DEBUG] fetch dataUrl 状态:', res.status, res.statusText);
-
     const blob = await res.blob();
-    console.log('[MBTI_SHARE_DEBUG] blob size:', blob.size);
-    console.log('[MBTI_SHARE_DEBUG] blob type:', blob.type);
 
     if (blob.size === 0) {
-      console.error('[MBTI_SHARE_DEBUG] blob 为空');
       throw new Error('图片数据为空');
     }
 
@@ -68,42 +59,24 @@ export async function uploadShareCard(dataUrl: string, type: string): Promise<st
     // filePath 只使用文件名，bucket 名已在 .from('share-cards') 中指定
     const filePath = fileName;
 
-    console.log('[MBTI_SHARE_DEBUG] fileName:', fileName);
-    console.log('[MBTI_SHARE_DEBUG] filePath:', filePath);
-
     const { error } = await supabase.storage.from('share-cards').upload(filePath, blob, {
       contentType: 'image/png',
       upsert: true,
     });
 
     if (error) {
-      console.error('[MBTI_SHARE_DEBUG] Supabase upload error:', error);
-      console.error('[MBTI_SHARE_DEBUG] error message:', error.message);
-      console.error('[MBTI_SHARE_DEBUG] error status:', (error as any).status);
+      console.error('Supabase upload error:', error);
       throw new Error(`Upload failed: ${error.message}`);
     }
 
-    console.log('[MBTI_SHARE_DEBUG] Supabase upload 成功');
-
-    // 获取 Supabase 公开 URL
-    const { data: urlData } = supabase.storage.from('share-cards').getPublicUrl(filePath);
-    const supabaseImageUrl = urlData.publicUrl;
-    console.log('[MBTI_SHARE_DEBUG] supabaseImageUrl:', supabaseImageUrl);
-
     // 使用 file.beiyoo.cn 代理域名，确保小程序域名白名单可用
     const proxyImageUrl = `https://file.beiyoo.cn/share-cards/${encodeURIComponent(fileName)}`;
-    console.log('[MBTI_SHARE_DEBUG] proxyImageUrl:', proxyImageUrl);
 
     // 最终传给小程序的 imageUrl（使用代理 URL）
     const finalImageUrl = proxyImageUrl;
-    console.log('[MBTI_SHARE_DEBUG] final imageUrl passed to mini program:', finalImageUrl);
-    console.log('[MBTI_SHARE_DEBUG] final imageUrl 是 HTTPS:', finalImageUrl.startsWith('https://'));
-
-    console.log('[MBTI_SHARE_DEBUG] ===== 图片上传完成 =====');
     return finalImageUrl;
-  } catch (error: any) {
-    console.error('[MBTI_SHARE_DEBUG] uploadShareCard 失败:', error);
-    console.error('[MBTI_SHARE_DEBUG] error message:', error?.message);
+  } catch (error: unknown) {
+    console.error('uploadShareCard failed:', error);
     throw error;
   }
 }

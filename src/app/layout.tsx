@@ -16,7 +16,7 @@ export default function RootLayout({
     <html lang="zh-CN">
       <body className="antialiased">
         {children}
-        <DebugPanel />
+        {process.env.NODE_ENV !== "production" && <DebugPanel />}
       </body>
     </html>
   );

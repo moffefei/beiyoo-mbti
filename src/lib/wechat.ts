@@ -7,7 +7,7 @@ const WX_SDK_URL = 'https://res.wx.qq.com/open/js/jweixin-1.6.0.js';
 export function isWeChatMiniProgram(): boolean {
   if (typeof window === 'undefined') return false;
   // 方式1: __wxjs_environment (iOS/Android 微信 web-view 通用)
-  if ((window as any).__wxjs_environment === 'miniprogram') return true;
+  if (window.__wxjs_environment === 'miniprogram') return true;
   // 方式2: userAgent 检测 (鸿蒙等部分环境)
   if (/miniProgram/i.test(navigator.userAgent)) return true;
   return false;
@@ -19,20 +19,20 @@ export function isWeChatMiniProgram(): boolean {
 export function getMiniProgramEnv(): 'standard' | 'harmony' | 'none' {
   if (typeof window === 'undefined') return 'none';
   // 标准环境: 有 window.wx.miniProgram
-  if ((window as any).wx?.miniProgram) return 'standard';
+  if (window.wx?.miniProgram) return 'standard';
   // 鸿蒙环境: 无 window.wx，但有 __wxjs_environment
-  if ((window as any).__wxjs_environment === 'miniprogram') return 'harmony';
+  if (window.__wxjs_environment === 'miniprogram') return 'harmony';
   return 'none';
 }
 
 let sdkLoadPromise: Promise<void> | null = null;
 
 function waitForMiniProgram(timeout = 3000): Promise<void> {
-  if ((window as any).wx?.miniProgram) return Promise.resolve();
+  if (window.wx?.miniProgram) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const timer = setInterval(() => {
-      if ((window as any).wx?.miniProgram) {
+      if (window.wx?.miniProgram) {
         clearInterval(timer);
         resolve();
       } else if (Date.now() - start > timeout) {
@@ -44,7 +44,7 @@ function waitForMiniProgram(timeout = 3000): Promise<void> {
 }
 
 async function _doLoadSDK(): Promise<void> {
-  if ((window as any).wx) {
+  if (window.wx) {
     await waitForMiniProgram();
     return;
   }
@@ -62,7 +62,7 @@ async function _doLoadSDK(): Promise<void> {
 
 export function loadWeChatSDK(): Promise<void> {
   if (typeof window === 'undefined') return Promise.reject(new Error('Not in browser'));
-  if ((window as any).wx?.miniProgram) return Promise.resolve();
+  if (window.wx?.miniProgram) return Promise.resolve();
 
   if (!sdkLoadPromise) {
     sdkLoadPromise = _doLoadSDK().catch((err) => {
@@ -81,51 +81,30 @@ export function loadWeChatSDK(): Promise<void> {
  * 3. 鸿蒙无 wx: 使用 postMessage 通知小程序端跳转
  */
 export async function miniProgramNavigateTo(url: string): Promise<void> {
-  console.log('[MBTI_SHARE_DEBUG] ===== miniProgramNavigateTo =====');
-  console.log('[MBTI_SHARE_DEBUG] 目标 URL:', url);
-
-  const env = getMiniProgramEnv();
-  console.log('[MBTI_SHARE_DEBUG] 环境类型:', env);
-
   // 方式1: 标准环境，直接使用 wx.miniProgram.navigateTo
-  if ((window as any).wx?.miniProgram) {
-    console.log('[MBTI_SHARE_DEBUG] 使用标准 wx.miniProgram.navigateTo');
-    (window as any).wx.miniProgram.navigateTo({
+  if (window.wx?.miniProgram) {
+    window.wx.miniProgram.navigateTo({
       url,
-      success: (res: any) => console.log('[MBTI_SHARE_DEBUG] navigateTo success', res),
-      fail: (err: any) => {
-        console.error('[MBTI_SHARE_DEBUG] navigateTo fail', err);
-        // 失败后尝试 postMessage
-        tryPostMessage(url);
-      },
-      complete: (res: any) => console.log('[MBTI_SHARE_DEBUG] navigateTo complete', res),
+      fail: () => tryPostMessage(url),
     });
     return;
   }
 
   // 方式2: 尝试加载 JSSDK 后再跳转 (鸿蒙部分版本支持)
   try {
-    console.log('[MBTI_SHARE_DEBUG] 尝试加载 WeChat JSSDK...');
     await loadWeChatSDK();
-    if ((window as any).wx?.miniProgram) {
-      console.log('[MBTI_SHARE_DEBUG] JSSDK 加载成功，使用 navigateTo');
-      (window as any).wx.miniProgram.navigateTo({
+    if (window.wx?.miniProgram) {
+      window.wx.miniProgram.navigateTo({
         url,
-        success: (res: any) => console.log('[MBTI_SHARE_DEBUG] navigateTo success', res),
-        fail: (err: any) => {
-          console.error('[MBTI_SHARE_DEBUG] navigateTo fail', err);
-          tryPostMessage(url);
-        },
-        complete: (res: any) => console.log('[MBTI_SHARE_DEBUG] navigateTo complete', res),
+        fail: () => tryPostMessage(url),
       });
       return;
     }
   } catch (sdkErr) {
-    console.log('[MBTI_SHARE_DEBUG] JSSDK 加载失败:', sdkErr);
+    console.warn('WeChat SDK load failed:', sdkErr);
   }
 
   // 方式3: 使用 postMessage 通知小程序端
-  console.log('[MBTI_SHARE_DEBUG] 使用 postMessage 通知小程序');
   tryPostMessage(url);
 }
 
@@ -134,23 +113,17 @@ export async function miniProgramNavigateTo(url: string): Promise<void> {
  * 适用于鸿蒙等不支持 window.wx 的环境
  */
 function tryPostMessage(url: string): void {
-  console.log('[MBTI_SHARE_DEBUG] tryPostMessage:', url);
-
   // 标准微信 web-view postMessage
-  if ((window as any).wx?.miniProgram?.postMessage) {
-    (window as any).wx.miniProgram.postMessage({
+  if (window.wx?.miniProgram?.postMessage) {
+    window.wx.miniProgram.postMessage({
       data: { type: 'navigateTo', url },
     });
-    console.log('[MBTI_SHARE_DEBUG] wx.miniProgram.postMessage 已发送');
     return;
   }
 
   // 尝试使用 WeixinJSBridge
-  if ((window as any).WeixinJSBridge) {
-    (window as any).WeixinJSBridge.invoke('navigateTo', { url }, (res: any) => {
-      console.log('[MBTI_SHARE_DEBUG] WeixinJSBridge.navigateTo res:', res);
-    });
-    console.log('[MBTI_SHARE_DEBUG] WeixinJSBridge.invoke 已调用');
+  if (window.WeixinJSBridge) {
+    window.WeixinJSBridge.invoke('navigateTo', { url });
     return;
   }
 
@@ -178,8 +151,6 @@ export async function navigateToShareResult(
   desc: string,
   imageUrl: string,
 ): Promise<void> {
-  console.log('[MBTI_SHARE_DEBUG] ===== 开始跳转小程序原生页 =====');
-
   // 如果 imageUrl 太长，使用 posterId 短参数
   const MAX_URL_LENGTH = 800;
   let finalImageUrl = imageUrl;
@@ -191,9 +162,8 @@ export async function navigateToShareResult(
       const pathParts = url.pathname.split('/');
       posterId = pathParts[pathParts.length - 1];
       finalImageUrl = `${url.origin}${pathParts.slice(0, -1).join('/')}/`;
-      console.log('[MBTI_SHARE_DEBUG] URL 过长，使用 posterId:', posterId);
     } catch {
-      console.log('[MBTI_SHARE_DEBUG] URL 解析失败，保留原样');
+      finalImageUrl = imageUrl;
     }
   }
 
@@ -207,8 +177,5 @@ export async function navigateToShareResult(
   }
 
   const url = `/pages/share-result/share-result?${params.toString()}`;
-  console.log('[MBTI_SHARE_DEBUG] URL 长度:', url.length);
-  console.log('[MBTI_SHARE_DEBUG] imageUrl:', finalImageUrl);
-
   await miniProgramNavigateTo(url);
 }
