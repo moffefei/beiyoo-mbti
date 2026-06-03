@@ -14,8 +14,17 @@ const strengthLabels = {
   uncertain: '不明显',
 };
 
+const pairShortLabels = {
+  EI: '社交能量',
+  SN: '信息处理',
+  TF: '决策依据',
+  JP: '生活结构',
+};
+
 export default function Result() {
   const result = useQuizStore((state) => state.result);
+  const resultHistory = useQuizStore((state) => state.resultHistory);
+  const clearResultHistory = useQuizStore((state) => state.clearResultHistory);
   const resetQuiz = useQuizStore((state) => state.resetQuiz);
   const setAppState = useQuizStore((state) => state.setAppState);
   const [showDetails, setShowDetails] = useState(false);
@@ -93,6 +102,10 @@ export default function Result() {
     T: 'bg-sky-500', F: 'bg-pink-500',
     J: 'bg-emerald-500', P: 'bg-orange-500',
   };
+  const previousHistory = resultHistory.slice(1, 5);
+  const uncertainLabels = result.uncertainDimensions
+    .map((dimension) => `${pairShortLabels[dimension]}（${dimension}）`)
+    .join('、');
 
   return (
     <div className="min-h-screen px-5 py-6 max-w-lg mx-auto">
@@ -117,6 +130,28 @@ export default function Result() {
           </p>
         )}
       </div>
+
+      {result.hasUncertainDimension && (
+        <div className="bg-white/75 backdrop-blur-sm rounded-2xl p-5 mb-5 shadow-sm border border-primary-100">
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">为什么会有问号？</h3>
+          <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
+            <p>
+              问号表示 {uncertainLabels} 暂时没有形成清晰倾向。通常是因为这一维度两端分数接近，或相关回答偏中间，所以我们不强行给你贴上固定类型。
+            </p>
+            <p>
+              这不是答错，也不是系统异常。它更像是在提醒：这个维度可能更依赖情境，你可以先参考已经清晰的维度。
+            </p>
+          </div>
+          <div className="mt-4 rounded-xl bg-primary-50 px-4 py-3">
+            <h4 className="text-xs font-semibold text-primary-700 mb-2">接下来可以这样做</h4>
+            <ul className="space-y-1.5 text-xs text-primary-800 leading-relaxed">
+              <li>回想真实生活里的具体场景，而不是理想中的自己。</li>
+              <li>稍后在更放松的状态下重测，看看问号是否稳定出现。</li>
+              <li>把问号当作弹性区间，优先参考没有问号的维度。</li>
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* 维度图表 */}
       <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-5 mb-5 shadow-sm">
@@ -157,6 +192,64 @@ export default function Result() {
           })}
         </div>
       </div>
+
+      {resultHistory.length > 0 && (
+        <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-5 mb-5 shadow-sm">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700">本地趋势</h3>
+              <p className="text-xs text-gray-400 mt-1">仅保存在当前设备，不上传逐题答案</p>
+            </div>
+            <button
+              onClick={clearResultHistory}
+              className="shrink-0 min-h-9 px-3 rounded-lg bg-gray-100 text-xs font-medium text-gray-500 hover:bg-gray-200 transition-colors"
+            >
+              清除
+            </button>
+          </div>
+          <div className="space-y-2">
+            {resultHistory.slice(0, 5).map((item, index) => (
+              <div
+                key={item.id}
+                className="flex items-center justify-between gap-3 rounded-xl bg-white/70 px-3 py-2"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">
+                    {index === 0 ? '本次' : index === 1 ? '上次' : '更早'} · {item.displayType}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {new Date(item.createdAt).toLocaleDateString('zh-CN', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  {item.dimensionResults.map((dimension) => (
+                    <span
+                      key={dimension.pair}
+                      className={`min-w-6 rounded-md px-1.5 py-1 text-center text-xs font-semibold ${
+                        dimension.strength === 'uncertain'
+                          ? 'bg-gray-100 text-gray-400'
+                          : 'bg-primary-100 text-primary-700'
+                      }`}
+                    >
+                      {dimension.preferred ?? '?'}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          {previousHistory.length > 0 && (
+            <p className="mt-3 text-xs text-gray-500 leading-relaxed">
+              如果某个维度多次出现问号，它可能是你的情境弹性区；如果某些字母反复稳定出现，可以优先参考那些维度。
+            </p>
+          )}
+        </div>
+      )}
 
       {/* 详情展开 */}
       <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-5 mb-5 shadow-sm">
