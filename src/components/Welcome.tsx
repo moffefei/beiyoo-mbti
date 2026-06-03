@@ -34,7 +34,7 @@ export default function Welcome() {
         发现你的人格类型
       </h2>
       <p className="text-sm text-gray-400 mb-2 text-center max-w-xs">
-        60 道精选题目 · 参考 2026 年最新 MBTI 研究 · 结果仅供参考
+        60 道四维倾向题 · 用于娱乐和自我探索 · 结果仅供参考
       </p>
       {totalCount !== null && totalCount > 0 && (
         <p className="text-xs text-primary-500 font-medium mb-8">
@@ -51,8 +51,8 @@ export default function Welcome() {
             </svg>
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-800">科学题库</p>
-            <p className="text-xs text-gray-500">基于经典 MBTI 理论设计</p>
+            <p className="text-sm font-medium text-gray-800">四维倾向</p>
+            <p className="text-xs text-gray-500">基于 MBTI 偏好框架设计</p>
           </div>
         </div>
 
@@ -63,8 +63,8 @@ export default function Welcome() {
             </svg>
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-800">智能分析</p>
-            <p className="text-xs text-gray-500">动态调整题目权重</p>
+            <p className="text-sm font-medium text-gray-800">倾向分析</p>
+            <p className="text-xs text-gray-500">呈现维度强弱与不确定性</p>
           </div>
         </div>
 
@@ -95,7 +95,7 @@ export default function Welcome() {
       {/* 免责声明 */}
       <button
         onClick={() => setShowDisclaimer(true)}
-        className="text-xs text-gray-400 hover:text-gray-600 mt-3 underline underline-offset-2 transition-colors"
+        className="min-h-11 px-4 text-xs text-gray-400 hover:text-gray-600 mt-1 underline underline-offset-2 transition-colors"
       >
         测试声明
       </button>
@@ -108,11 +108,11 @@ export default function Welcome() {
             <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
               <p>
                 <strong className="text-gray-800">1. 娱乐参考性质</strong><br />
-                本测试基于 MBTI 理论框架设计，仅供娱乐和自我探索参考，不构成专业心理诊断或职业指导建议。
+                本测试基于 MBTI 四维偏好框架设计，仅供娱乐和自我探索参考，不构成专业心理诊断、职业指导或人员筛选建议。
               </p>
               <p>
                 <strong className="text-gray-800">2. 结果非绝对</strong><br />
-                人格是复杂且动态的，测试结果反映的是你答题时的倾向，而非固定不变的标签。请勿将结果作为评判自己或他人的唯一标准。
+                人格是复杂且动态的，测试结果反映的是你答题时的偏好模式，而非固定不变的标签。若维度倾向不明显，我们会提示结果不够稳定。
               </p>
               <p>
                 <strong className="text-gray-800">3. 数据收集</strong><br />

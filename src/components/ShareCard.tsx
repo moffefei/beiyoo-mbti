@@ -3,9 +3,6 @@
 import { useRef, useState, useCallback } from 'react';
 import { toPng } from 'html-to-image';
 import type { ResultData } from '@/types';
-import { isWeChatMiniProgram, navigateToSaveImage, navigateToShareResult } from '@/lib/wechat';
-import { uploadShareCard } from '@/lib/supabase';
-import { generateAndUploadShareImage } from '@/lib/shareImage';
 
 interface ShareCardProps {
   result: ResultData;
@@ -15,6 +12,7 @@ interface ShareCardProps {
 export default function ShareCard({ result, onClose }: ShareCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
 
   // Generate poster image data URL (shared helper)
   const generatePosterDataUrl = useCallback(async (): Promise<string> => {
@@ -45,15 +43,10 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
     });
   }, []);
 
-  // Generate poster and upload to Supabase, return public URL
-  const getOrCreatePosterImageUrl = useCallback(async (): Promise<string> => {
-    const dataUrl = await generatePosterDataUrl();
-    return uploadShareCard(dataUrl, result.type);
-  }, [generatePosterDataUrl, result.type]);
-
   // "保存图片" button — 普通浏览器环境
   const generateImage = useCallback(async () => {
     setIsGenerating(true);
+    setStatusMessage('正在生成图片...');
     try {
       const dataUrl = await generatePosterDataUrl();
 
@@ -66,10 +59,11 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
           const file = new File([blob], `beiyoo-mbti-${result.type}.png`, { type: 'image/png' });
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({
-              title: `我的 MBTI 类型是 ${result.type}`,
+              title: `我的 MBTI 倾向是 ${result.displayType}`,
               text: `${result.summary} - 来测测你的人格类型吧！`,
               files: [file],
             });
+            setStatusMessage('已打开系统分享');
             return;
           }
         } catch {
@@ -84,17 +78,19 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
       document.body.appendChild(link);
       link.click();
       setTimeout(() => document.body.removeChild(link), 100);
-    } catch (error: any) {
+      setStatusMessage('图片已开始下载');
+    } catch (error: unknown) {
       console.error('生成分享卡片失败:', error);
-      alert('生成图片失败: ' + (error?.message || '未知错误') + '，请尝试截图分享');
+      setStatusMessage(`生成图片失败：${error instanceof Error ? error.message : '请尝试截图分享'}`);
     } finally {
       setIsGenerating(false);
     }
-  }, [result.type, result.summary, generatePosterDataUrl]);
+  }, [result.type, result.displayType, result.summary, generatePosterDataUrl]);
 
   // "分享" button — 普通浏览器环境
   const shareToWeChat = useCallback(async () => {
     setIsGenerating(true);
+    setStatusMessage('正在准备分享图片...');
     try {
       const dataUrl = await generatePosterDataUrl();
 
@@ -106,14 +102,15 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
           const file = new File([blob], `beiyoo-mbti-${result.type}.png`, { type: 'image/png' });
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({
-              title: `我的 MBTI 类型是 ${result.type}`,
+              title: `我的 MBTI 倾向是 ${result.displayType}`,
               text: `${result.summary} - 来测测你的人格类型吧！`,
               files: [file],
             });
+            setStatusMessage('已打开系统分享');
             return;
           }
-        } catch (shareError: any) {
-          console.log('Native share failed:', shareError?.message || shareError);
+        } catch (shareError: unknown) {
+          console.info('Native share failed:', shareError instanceof Error ? shareError.message : shareError);
         }
       }
 
@@ -124,9 +121,9 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
         await navigator.clipboard.write([
           new ClipboardItem({ 'image/png': blob }),
         ]);
-        alert('图片已复制到剪贴板，请粘贴到聊天窗口分享');
-      } catch (clipboardError: any) {
-        console.error('Clipboard failed:', clipboardError?.message || clipboardError);
+        setStatusMessage('图片已复制到剪贴板，请粘贴到聊天窗口分享');
+      } catch (clipboardError: unknown) {
+        console.error('Clipboard failed:', clipboardError instanceof Error ? clipboardError.message : clipboardError);
         const newWindow = window.open();
         if (newWindow) {
           newWindow.document.write(`
@@ -138,46 +135,77 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
             </html>
           `);
           newWindow.document.close();
-          alert('图片已在新窗口打开，请长按保存或截图分享');
+          setStatusMessage('图片已在新窗口打开，请长按保存或截图分享');
         } else {
-          alert('分享失败，请截图保存');
+          setStatusMessage('分享失败，请截图保存');
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('分享失败:', error);
-      alert('分享失败: ' + (error?.message || '未知错误') + '，请尝试截图分享');
+      setStatusMessage(`分享失败：${error instanceof Error ? error.message : '请尝试截图分享'}`);
     } finally {
       setIsGenerating(false);
     }
-  }, [result.type, result.summary, generatePosterDataUrl]);
+  }, [result.type, result.displayType, result.summary, generatePosterDataUrl]);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-6 overflow-y-auto overflow-x-hidden">
-      <div className="w-full max-w-[420px]">
+    <div
+      className="fixed inset-0 bg-black/65 backdrop-blur-sm flex items-start sm:items-center justify-center z-50 px-4 py-4 sm:py-6 overflow-hidden"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="relative w-full max-w-[420px] max-h-[calc(100vh-2rem)] overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="sticky top-0 ml-auto mb-2 w-10 h-10 bg-white/95 text-gray-700 rounded-full shadow-lg font-semibold hover:bg-white transition-colors flex items-center justify-center z-10"
+            aria-label="关闭分享卡片"
+          >
+            ×
+          </button>
+        )}
         {/* 预览区域 */}
         <div className="bg-white rounded-2xl p-4 mb-4">
           <div
             ref={cardRef}
             data-share-card
-            className="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 p-6 sm:p-8 rounded-2xl text-white w-full max-w-[420px] mx-auto box-border"
+            className="bg-[linear-gradient(145deg,#f7fbff_0%,#e8f7ff_48%,#fff7ed_100%)] p-6 sm:p-8 rounded-2xl text-gray-900 w-full max-w-[420px] mx-auto box-border border border-sky-100"
           >
             <div className="text-center mb-8">
-              <p className="text-base opacity-80 mb-3 tracking-wide">Beiyoo MBTI 人格测试</p>
-              <h2 className="text-6xl font-bold mb-3">{result.type}</h2>
-              <p className="text-2xl opacity-90">{result.summary}</p>
+              <p className="inline-flex items-center rounded-full bg-primary-500 px-4 py-1.5 text-sm font-semibold text-white mb-5 tracking-wide">
+                Beiyoo MBTI 人格测试
+              </p>
+              <h2 className="text-5xl sm:text-6xl font-bold mb-4 text-primary-700">{result.displayType}</h2>
+              <p className="text-xl sm:text-2xl text-gray-700 leading-snug">{result.summary}</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-5 mb-6">
-              <p className="text-base leading-relaxed">{result.details}</p>
+            <div className="bg-white/85 rounded-xl p-5 mb-6 shadow-sm border border-white">
+              <p className="text-base leading-relaxed text-gray-700">{result.details}</p>
             </div>
-            <div className="text-center">
-              <p className="text-sm opacity-70 tracking-widest">BEIYOO · AI</p>
-              <p className="text-xs opacity-50 mt-1">测测你的人格类型</p>
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {['E/I', 'S/N', 'T/F', 'J/P'].map((pair) => (
+                <span
+                  key={pair}
+                  className="rounded-lg bg-white/75 py-2 text-center text-xs font-semibold text-primary-700"
+                >
+                  {pair}
+                </span>
+              ))}
+            </div>
+            <div className="text-center text-primary-700">
+              <p className="text-sm tracking-widest font-semibold">BEIYOO · AI</p>
+              <p className="text-xs text-gray-500 mt-1">测测你的四维偏好倾向</p>
             </div>
           </div>
         </div>
 
         {/* 操作按钮 */}
-        <div className="flex gap-3 justify-center w-full max-w-[420px] mx-auto">
+        {statusMessage && (
+          <p className="mb-3 rounded-xl bg-white/95 px-4 py-3 text-sm text-gray-700 shadow-sm">
+            {statusMessage}
+          </p>
+        )}
+
+        <div className="sticky bottom-0 flex gap-3 justify-center w-full max-w-[420px] mx-auto bg-black/20 backdrop-blur-sm py-2">
           <button
             onClick={generateImage}
             disabled={isGenerating}
@@ -200,14 +228,6 @@ export default function ShareCard({ result, onClose }: ShareCardProps) {
           </button>
         </div>
 
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="w-full max-w-[420px] mx-auto mt-3 py-3 bg-white/10 text-white rounded-xl font-medium hover:bg-white/20 transition-colors block"
-          >
-            关闭
-          </button>
-        )}
       </div>
     </div>
   );

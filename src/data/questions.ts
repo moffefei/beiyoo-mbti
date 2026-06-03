@@ -36,7 +36,7 @@ export const questions: Question[] = [
   },
   {
     id: 3,
-    text: '我倾向于在思考清楚后再发言。',
+    text: '长时间社交后，我通常需要独处来恢复精力。',
     dimension: 'EI',
     direction: 'I',
     options: [
@@ -75,7 +75,7 @@ export const questions: Question[] = [
   },
   {
     id: 6,
-    text: '我有很多朋友，社交圈子很广。',
+    text: '我会主动寻找新的社交场合和认识新朋友。',
     dimension: 'EI',
     direction: 'E',
     options: [
@@ -88,7 +88,7 @@ export const questions: Question[] = [
   },
   {
     id: 7,
-    text: '我更喜欢用文字信息而不是面对面交流。',
+    text: '比起频繁互动，我更需要稳定的独处时间。',
     dimension: 'EI',
     direction: 'I',
     options: [
@@ -114,7 +114,7 @@ export const questions: Question[] = [
   },
   {
     id: 9,
-    text: '我倾向于先倾听，然后再表达自己的观点。',
+    text: '在群体讨论中，我通常不会急着抢先表达。',
     dimension: 'EI',
     direction: 'I',
     options: [
@@ -192,7 +192,7 @@ export const questions: Question[] = [
   },
   {
     id: 15,
-    text: '我倾向于在行动前先深思熟虑。',
+    text: '在热闹环境中待久后，我会想退回安静空间。',
     dimension: 'EI',
     direction: 'I',
     options: [
@@ -233,7 +233,7 @@ export const questions: Question[] = [
   },
   {
     id: 18,
-    text: '我倾向于按照已有的方法和经验解决问题。',
+    text: '理解信息时，我会先抓住可观察的细节和事实。',
     dimension: 'SN',
     direction: 'S',
     options: [
@@ -285,7 +285,7 @@ export const questions: Question[] = [
   },
   {
     id: 22,
-    text: '我更喜欢按部就班地完成任务。',
+    text: '学习新内容时，我会先看具体例子再总结规律。',
     dimension: 'SN',
     direction: 'S',
     options: [
@@ -363,7 +363,7 @@ export const questions: Question[] = [
   },
   {
     id: 28,
-    text: '我倾向于关注当下，而不是未来。',
+    text: '做判断时，我更依赖眼前能验证的信息。',
     dimension: 'SN',
     direction: 'S',
     options: [
@@ -389,7 +389,7 @@ export const questions: Question[] = [
   },
   {
     id: 30,
-    text: '我更喜欢按照既定的流程和方法工作。',
+    text: '面对复杂问题时，我会先确认现实条件和限制。',
     dimension: 'SN',
     direction: 'S',
     options: [
@@ -430,7 +430,7 @@ export const questions: Question[] = [
   },
   {
     id: 33,
-    text: '我认为公平比和谐更重要。',
+    text: '做决定时，我更看重规则是否一致，而不是每个人是否都舒服。',
     dimension: 'TF',
     direction: 'T',
     options: [
@@ -456,7 +456,7 @@ export const questions: Question[] = [
   },
   {
     id: 35,
-    text: '我更喜欢直接指出问题，而不是回避冲突。',
+    text: '讨论分歧时，我会先把问题本身说清楚。',
     dimension: 'TF',
     direction: 'T',
     options: [
@@ -482,7 +482,7 @@ export const questions: Question[] = [
   },
   {
     id: 37,
-    text: '我认为批评应该基于事实，而不是个人情感。',
+    text: '评价一个方案时，我会尽量把个人好恶和判断标准分开。',
     dimension: 'TF',
     direction: 'T',
     options: [
@@ -495,7 +495,7 @@ export const questions: Question[] = [
   },
   {
     id: 38,
-    text: '我倾向于维护团队的和谐氛围。',
+    text: '做决定时，我会留意相关的人是否被理解和尊重。',
     dimension: 'TF',
     direction: 'F',
     options: [
@@ -508,7 +508,7 @@ export const questions: Question[] = [
   },
   {
     id: 39,
-    text: '我更喜欢分析问题的根本原因。',
+    text: '面对选择时，我会先分析各方案的逻辑后果。',
     dimension: 'TF',
     direction: 'T',
     options: [
@@ -534,7 +534,7 @@ export const questions: Question[] = [
   },
   {
     id: 41,
-    text: '我认为效率比人际关系更重要。',
+    text: '资源有限时，我会优先考虑目标和标准是否被满足。',
     dimension: 'TF',
     direction: 'T',
     options: [
@@ -560,7 +560,7 @@ export const questions: Question[] = [
   },
   {
     id: 43,
-    text: '我更喜欢基于数据和事实做判断。',
+    text: '判断方案时，我会先看证据是否支持结论。',
     dimension: 'TF',
     direction: 'T',
     options: [
@@ -573,7 +573,7 @@ export const questions: Question[] = [
   },
   {
     id: 44,
-    text: '我倾向于避免冲突，寻求共识。',
+    text: '出现分歧时，我会先寻找彼此都能接受的表达方式。',
     dimension: 'TF',
     direction: 'F',
     options: [
@@ -586,7 +586,7 @@ export const questions: Question[] = [
   },
   {
     id: 45,
-    text: '我认为真理和正确性比和谐更重要。',
+    text: '即使气氛会变紧张，我也希望先把判断标准说清楚。',
     dimension: 'TF',
     direction: 'T',
     options: [
@@ -653,7 +653,7 @@ export const questions: Question[] = [
   },
   {
     id: 50,
-    text: '我倾向于在截止日期前完成任务。',
+    text: '开始任务前，我通常希望先确定交付节奏和检查点。',
     dimension: 'JP',
     direction: 'J',
     options: [
@@ -666,7 +666,7 @@ export const questions: Question[] = [
   },
   {
     id: 51,
-    text: '我喜欢探索新的方法和途径。',
+    text: '计划变化时，我能接受边做边调整方向。',
     dimension: 'JP',
     direction: 'P',
     options: [
@@ -692,7 +692,7 @@ export const questions: Question[] = [
   },
   {
     id: 53,
-    text: '我倾向于在压力下保持冷静和灵活。',
+    text: '情况不确定时，我倾向于先保留几个可选路径。',
     dimension: 'JP',
     direction: 'P',
     options: [
@@ -770,7 +770,7 @@ export const questions: Question[] = [
   },
   {
     id: 59,
-    text: '我倾向于在最后一刻完成任务。',
+    text: '接近截止点时，我仍愿意根据新信息调整做法。',
     dimension: 'JP',
     direction: 'P',
     options: [

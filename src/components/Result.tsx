@@ -7,7 +7,12 @@ import { saveMBTIResult, getStats } from '@/lib/supabase';
 import ShareCard from './ShareCard';
 import { isWeChatMiniProgram, navigateToShareResult } from '@/lib/wechat';
 import { generateAndUploadShareImage } from '@/lib/shareImage';
-import type { DimensionKey } from '@/types';
+const strengthLabels = {
+  clear: '清晰',
+  moderate: '中等',
+  slight: '轻微',
+  uncertain: '不明显',
+};
 
 export default function Result() {
   const result = useQuizStore((state) => state.result);
@@ -17,17 +22,15 @@ export default function Result() {
   const [showShare, setShowShare] = useState(false);
   const [stats, setStats] = useState<{ total: number; typeCounts: Record<string, number> } | null>(null);
   const [isGeneratingPoster, setIsGeneratingPoster] = useState(false);
-  const [inMiniProgram, setInMiniProgram] = useState(false);
-
-  // 检测是否在小程序 web-view 环境
-  useEffect(() => {
-    setInMiniProgram(isWeChatMiniProgram());
-  }, []);
+  const [inMiniProgram] = useState(() => isWeChatMiniProgram());
+  const [shareStatus, setShareStatus] = useState('');
 
   // 保存结果到 Supabase 并获取统计
   useEffect(() => {
     if (result) {
-      saveMBTIResult(result.type, result.scores);
+      if (!result.isLowConfidence) {
+        saveMBTIResult(result.type, result.scores);
+      }
       getStats().then((data) => {
         if (data) setStats(data);
       });
@@ -43,47 +46,31 @@ export default function Result() {
   const handleGenerateSharePoster = useCallback(async () => {
     if (!result) return;
     setIsGeneratingPoster(true);
-
-    // ===== 调试日志：点击按钮时的环境信息 =====
-    console.log('[MBTI_SHARE_DEBUG] ===== 分享按钮点击 =====');
-    console.log('[MBTI_SHARE_DEBUG] navigator.userAgent:', navigator.userAgent);
-    console.log('[MBTI_SHARE_DEBUG] window.__wxjs_environment:', (window as any).__wxjs_environment);
-    console.log('[MBTI_SHARE_DEBUG] window.wx exists:', typeof (window as any).wx !== 'undefined');
-    console.log('[MBTI_SHARE_DEBUG] wx.miniProgram exists:', typeof (window as any).wx?.miniProgram !== 'undefined');
-    console.log('[MBTI_SHARE_DEBUG] isWeChatMiniProgram():', isWeChatMiniProgram());
-    console.log('[MBTI_SHARE_DEBUG] resultData:', { type: result.type, summary: result.summary });
+    setShareStatus('正在生成分享海报...');
 
     try {
       // 1. 生成分享图并上传
-      console.log('[MBTI_SHARE_DEBUG] 开始调用 generateAndUploadShareImage...');
       const publicUrl = await generateAndUploadShareImage(result);
-      console.log('[MBTI_SHARE_DEBUG] generateAndUploadShareImage 返回:', publicUrl);
 
       // 校验 imageUrl
       if (!publicUrl) {
-        console.error('[MBTI_SHARE_DEBUG] imageUrl 为空');
-        alert('分享海报生成失败，图片 URL 为空');
+        setShareStatus('分享海报生成失败，图片 URL 为空');
         return;
       }
       if (!publicUrl.startsWith('https://')) {
-        console.error('[MBTI_SHARE_DEBUG] imageUrl 不是 HTTPS:', publicUrl);
-        alert('分享海报生成失败，图片 URL 格式错误');
+        setShareStatus('分享海报生成失败，图片 URL 格式错误');
         return;
       }
 
       // 2. 跳转到小程序原生分享页
-      const title = `我是 ${result.type}，快来测测你的人格类型`;
-      console.log('[MBTI_SHARE_DEBUG] 准备跳转到小程序原生页...');
+      const title = `我的 MBTI 倾向是 ${result.displayType}，快来测测你的人格类型`;
+      setShareStatus('正在打开小程序分享页...');
       await navigateToShareResult(result.type, title, result.summary, publicUrl);
-      console.log('[MBTI_SHARE_DEBUG] navigateToShareResult 调用完成');
-    } catch (error: any) {
-      console.error('[MBTI_SHARE_DEBUG] share poster failed', error);
-      console.error('[MBTI_SHARE_DEBUG] error message:', error?.message);
-      console.error('[MBTI_SHARE_DEBUG] error stack:', error?.stack);
-      alert('分享海报生成失败，请稍后重试');
+    } catch (error: unknown) {
+      console.error('Share poster failed:', error);
+      setShareStatus('分享海报生成失败，请稍后重试');
     } finally {
       setIsGeneratingPoster(false);
-      console.log('[MBTI_SHARE_DEBUG] ===== 分享流程结束 =====');
     }
   }, [result]);
 
@@ -100,7 +87,6 @@ export default function Result() {
     );
   }
 
-  const dimensionPairs: DimensionKey[] = ['EI', 'SN', 'TF', 'JP'];
   const dimensionColors: Record<string, string> = {
     E: 'bg-rose-500', I: 'bg-indigo-500',
     S: 'bg-amber-500', N: 'bg-violet-500',
@@ -108,27 +94,21 @@ export default function Result() {
     J: 'bg-emerald-500', P: 'bg-orange-500',
   };
 
-  // 计算百分比
-  const getPercentage = (d1: string, d2: string) => {
-    const s1 = result.scores[d1 as keyof typeof result.scores];
-    const s2 = result.scores[d2 as keyof typeof result.scores];
-    const total = s1 + s2;
-    if (total === 0) return 50;
-    return Math.round((s1 / total) * 100);
-  };
-
   return (
     <div className="min-h-screen px-5 py-6 max-w-lg mx-auto">
       {/* 顶部 */}
       <div className="text-center mb-8">
-        <p className="text-sm text-gray-500 mb-2">你的人格类型是</p>
+        <p className="text-sm text-gray-500 mb-2">你的当前倾向是</p>
         <h1 className="text-5xl font-bold text-primary-600 mb-2 tracking-wider">
-          {result.type}
+          {result.displayType}
         </h1>
         <p className="text-sm text-gray-600 leading-relaxed max-w-sm mx-auto">
           {result.summary}
         </p>
-        {stats && (
+        <p className="text-xs text-gray-500 leading-relaxed max-w-sm mx-auto mt-3">
+          {result.confidenceNote}
+        </p>
+        {stats && !result.isLowConfidence && (
           <p className="text-xs text-gray-400 mt-2">
             已有 {stats.total.toLocaleString()} 人完成测试
             {stats.typeCounts[result.type] > 1 && (
@@ -142,22 +122,20 @@ export default function Result() {
       <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-5 mb-5 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-700 mb-4">维度分析</h3>
         <div className="space-y-4">
-          {dimensionPairs.map((pair) => {
-            const d1 = pair[0];
-            const d2 = pair[1];
-            const pct = getPercentage(d1, d2);
-            const d1Score = result.scores[d1 as keyof typeof result.scores];
-            const d2Score = result.scores[d2 as keyof typeof result.scores];
+          {result.dimensionResults.map((dimension) => {
+            const d1 = dimension.left;
+            const d2 = dimension.right;
+            const pct = dimension.percentage;
 
             return (
-              <div key={pair}>
+              <div key={dimension.pair}>
                 <div className="flex justify-between text-xs text-gray-500 mb-1.5">
-                  <span className={`font-medium ${pct >= 50 ? 'text-gray-800' : ''}`}>
-                    {d1} ({d1Score})
+                  <span className={`font-medium ${dimension.preferred === d1 ? 'text-gray-800' : ''}`}>
+                    {d1} ({dimension.leftScore})
                   </span>
-                  <span className="text-gray-400">{pct}%</span>
-                  <span className={`font-medium ${pct < 50 ? 'text-gray-800' : ''}`}>
-                    ({d2Score}) {d2}
+                  <span className="text-gray-500">{strengthLabels[dimension.strength]}</span>
+                  <span className={`font-medium ${dimension.preferred === d2 ? 'text-gray-800' : ''}`}>
+                    ({dimension.rightScore}) {d2}
                   </span>
                 </div>
                 <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex">
@@ -170,9 +148,9 @@ export default function Result() {
                     style={{ width: `${100 - pct}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+                <div className="grid grid-cols-2 gap-3 text-xs text-gray-500 leading-snug mt-2">
                   <span>{dimensionDescriptions[d1]}</span>
-                  <span>{dimensionDescriptions[d2]}</span>
+                  <span className="text-right">{dimensionDescriptions[d2]}</span>
                 </div>
               </div>
             );
@@ -236,6 +214,11 @@ export default function Result() {
             </svg>
             生成分享卡片
           </button>
+        )}
+        {shareStatus && (
+          <p className="rounded-xl bg-white/70 px-4 py-3 text-sm text-gray-600">
+            {shareStatus}
+          </p>
         )}
         <button
           onClick={handleRestart}

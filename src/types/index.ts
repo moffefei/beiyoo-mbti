@@ -28,6 +28,22 @@ export interface DimensionScore {
   P: number;
 }
 
+export type DimensionStrength = 'clear' | 'moderate' | 'slight' | 'uncertain';
+
+export interface DimensionResult {
+  pair: DimensionKey;
+  left: Dimension;
+  right: Dimension;
+  leftScore: number;
+  rightScore: number;
+  preferred: Dimension | null;
+  percentage: number;
+  evidence: number;
+  difference: number;
+  strength: DimensionStrength;
+  isTie: boolean;
+}
+
 export type MBTIType =
   | 'ISTJ' | 'ISFJ' | 'INFJ' | 'INTJ'
   | 'ISTP' | 'ISFP' | 'INFP' | 'INTP'
@@ -36,10 +52,15 @@ export type MBTIType =
 
 export interface ResultData {
   type: MBTIType;
+  displayType: string;
   scores: DimensionScore;
   summary: string;
   details: string;
   careerAdvice: string;
+  dimensionResults: DimensionResult[];
+  uncertainDimensions: DimensionKey[];
+  isLowConfidence: boolean;
+  confidenceNote: string;
 }
 
 export type AppState = 'welcome' | 'quiz' | 'loading' | 'result';
