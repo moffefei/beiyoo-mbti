@@ -165,6 +165,7 @@ export function calculateResult(answers: Answers): ResultData {
   const uncertainDimensions = dimensionResults
     .filter((dimension) => dimension.strength === 'uncertain')
     .map((dimension) => dimension.pair);
+  const hasUncertainDimension = uncertainDimensions.length > 0;
   const isLowConfidence = uncertainDimensions.length >= 3;
   const resultData = resultDataMap[type];
   
@@ -183,6 +184,7 @@ export function calculateResult(answers: Answers): ResultData {
       : resultData.careerAdvice,
     dimensionResults,
     uncertainDimensions,
+    hasUncertainDimension,
     isLowConfidence,
     confidenceNote: getConfidenceNote(dimensionResults),
   };

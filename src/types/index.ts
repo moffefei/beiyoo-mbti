@@ -59,6 +59,7 @@ export interface ResultData {
   careerAdvice: string;
   dimensionResults: DimensionResult[];
   uncertainDimensions: DimensionKey[];
+  hasUncertainDimension: boolean;
   isLowConfidence: boolean;
   confidenceNote: string;
 }

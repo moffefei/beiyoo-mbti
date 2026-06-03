@@ -28,7 +28,7 @@ export default function Result() {
   // 保存结果到 Supabase 并获取统计
   useEffect(() => {
     if (result) {
-      if (!result.isLowConfidence) {
+      if (!result.hasUncertainDimension) {
         saveMBTIResult(result.type, result.scores);
       }
       getStats().then((data) => {
@@ -108,10 +108,10 @@ export default function Result() {
         <p className="text-xs text-gray-500 leading-relaxed max-w-sm mx-auto mt-3">
           {result.confidenceNote}
         </p>
-        {stats && !result.isLowConfidence && (
+        {stats && (
           <p className="text-xs text-gray-400 mt-2">
             已有 {stats.total.toLocaleString()} 人完成测试
-            {stats.typeCounts[result.type] > 1 && (
+            {!result.hasUncertainDimension && stats.typeCounts[result.type] > 1 && (
               <>，你是第 {stats.typeCounts[result.type]} 个 {result.type}</>
             )}
           </p>
