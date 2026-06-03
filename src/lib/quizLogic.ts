@@ -20,6 +20,24 @@ const dimensionPairs: Record<DimensionKey, [keyof DimensionScore, keyof Dimensio
 const pairOrder: DimensionKey[] = ['EI', 'SN', 'TF', 'JP'];
 const lowEvidenceThreshold = 6;
 
+const preferenceCopy: Record<string, string> = {
+  E: '你在外部互动和交流中更容易获得能量',
+  I: '你更需要独处和安静空间来恢复能量',
+  S: '你更重视具体事实、细节和可验证的信息',
+  N: '你更容易被模式、可能性和未来想象吸引',
+  T: '你做判断时更重视标准、证据和逻辑后果',
+  F: '你做判断时更重视人的感受、价值和关系影响',
+  J: '你更偏好清晰计划、确定步骤和有序推进',
+  P: '你更偏好保留弹性、边推进边调整',
+};
+
+const pairLabels: Record<DimensionKey, string> = {
+  EI: '社交能量',
+  SN: '信息处理',
+  TF: '决策依据',
+  JP: '生活结构',
+};
+
 export function getSortedQuestions(): typeof questions {
   return [...questions].sort((a, b) => a.id - b.id);
 }
@@ -131,6 +149,39 @@ function getConfidenceNote(dimensions: DimensionResult[]): string {
   return '这个结果反映的是你当前在四个偏好维度上的回答模式，不代表固定不变的人格标签。';
 }
 
+function getPartialResultCopy(
+  dimensions: DimensionResult[],
+  displayType: string,
+  isLowConfidence: boolean,
+) {
+  const clearPreferences = dimensions.filter(
+    (dimension) => dimension.strength !== 'uncertain' && dimension.preferred
+  );
+  const uncertainPreferences = dimensions.filter((dimension) => dimension.strength === 'uncertain');
+
+  if (isLowConfidence) {
+    return {
+      summary: '你的回答目前没有形成清晰的四维倾向，这可能表示你在不同情境下有较强的弹性，或这次选择偏中立。',
+      details: '当多个维度都接近中立时，给出确定人格类型会误导你。这个结果更适合提醒你：在做自我探索时，可以回想具体场景里的真实偏好，而不是追求一个固定标签。',
+      careerAdvice: '先观察自己在社交能量、信息处理、决策依据和生活结构上的真实偏好，再把职业建议当作轻量参考。',
+    };
+  }
+
+  const clearText = clearPreferences
+    .map((dimension) => preferenceCopy[dimension.preferred as string])
+    .join('；');
+  const uncertainText = uncertainPreferences
+    .map((dimension) => `${pairLabels[dimension.pair]}（${dimension.pair}）`)
+    .join('、');
+  const partialLabel = displayType.replace(/\?/g, '');
+
+  return {
+    summary: `你的回答呈现出部分 ${partialLabel} 倾向，但仍有部分维度不够稳定。`,
+    details: `从这次回答看，较清晰的部分是：${clearText}。同时，${uncertainText} 的倾向还不明显，所以这里不把你归入某个固定 16 型人格。你可以把这个结果理解为当前偏好组合，而不是完整人格标签。`,
+    careerAdvice: '职业和发展建议更适合从已清晰的偏好出发：选择能发挥你的明显倾向、同时允许不确定维度继续探索的环境。',
+  };
+}
+
 export function getProgress(answers: Answers) {
   return {
     current: Object.keys(answers).length,
@@ -165,24 +216,23 @@ export function calculateResult(answers: Answers): ResultData {
   const uncertainDimensions = dimensionResults
     .filter((dimension) => dimension.strength === 'uncertain')
     .map((dimension) => dimension.pair);
+  const hasUncertainDimension = uncertainDimensions.length > 0;
   const isLowConfidence = uncertainDimensions.length >= 3;
   const resultData = resultDataMap[type];
+  const partialResultData = hasUncertainDimension
+    ? getPartialResultCopy(dimensionResults, displayType, isLowConfidence)
+    : null;
   
   return {
     type,
     displayType,
     scores,
-    summary: isLowConfidence
-      ? '你的回答目前没有形成清晰的四维倾向，这可能表示你在不同情境下有较强的弹性，或这次选择偏中立。'
-      : resultData.summary,
-    details: isLowConfidence
-      ? '当多个维度都接近中立时，给出确定人格类型会误导你。这个结果更适合提醒你：在做自我探索时，可以回想具体场景里的真实偏好，而不是追求一个固定标签。'
-      : resultData.details,
-    careerAdvice: isLowConfidence
-      ? '先观察自己在社交能量、信息处理、决策依据和生活结构上的真实偏好，再把职业建议当作轻量参考。'
-      : resultData.careerAdvice,
+    summary: partialResultData?.summary ?? resultData.summary,
+    details: partialResultData?.details ?? resultData.details,
+    careerAdvice: partialResultData?.careerAdvice ?? resultData.careerAdvice,
     dimensionResults,
     uncertainDimensions,
+    hasUncertainDimension,
     isLowConfidence,
     confidenceNote: getConfidenceNote(dimensionResults),
   };

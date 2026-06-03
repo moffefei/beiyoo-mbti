@@ -177,13 +177,6 @@ export default function Quiz() {
             </button>
           ))}
         </div>
-
-        {/* 量表说明 */}
-        <div className="mt-4 flex justify-between text-xs text-gray-400 px-2">
-          <span>非常不符合</span>
-          <span>不确定</span>
-          <span>非常符合</span>
-        </div>
       </div>
 
       <div className="pb-[env(safe-area-inset-bottom)]" />

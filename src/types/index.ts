@@ -59,8 +59,18 @@ export interface ResultData {
   careerAdvice: string;
   dimensionResults: DimensionResult[];
   uncertainDimensions: DimensionKey[];
+  hasUncertainDimension: boolean;
   isLowConfidence: boolean;
   confidenceNote: string;
+}
+
+export interface ResultHistoryItem {
+  id: string;
+  createdAt: string;
+  displayType: string;
+  dimensionResults: DimensionResult[];
+  uncertainDimensions: DimensionKey[];
+  hasUncertainDimension: boolean;
 }
 
 export type AppState = 'welcome' | 'quiz' | 'loading' | 'result';
@@ -70,9 +80,11 @@ export interface QuizState {
   currentQuestion: number;
   answers: Answers;
   result: ResultData | null;
+  resultHistory: ResultHistoryItem[];
   setAppState: (state: AppState) => void;
   setCurrentQuestion: (index: number) => void;
   answerQuestion: (questionId: number, score: number) => void;
   setResult: (result: ResultData) => void;
+  clearResultHistory: () => void;
   resetQuiz: () => void;
 }
